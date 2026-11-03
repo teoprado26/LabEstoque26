@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import {
-  ArrowLeftRight, ClipboardCheck, ClipboardList, PackageCheck, PackageMinus, PackagePlus, ScanLine, ShoppingCart, TriangleAlert, Undo2, Wrench, type LucideIcon,
+  ArrowLeftRight, ClipboardCheck, ClipboardList, PackageCheck, PackageMinus, PackagePlus, ScanLine, ShoppingCart, TriangleAlert, Undo2, Wrench, Zap, type LucideIcon,
 } from 'lucide-react-native';
 import { View } from 'react-native';
 import { useCor } from '@/components/sds';
@@ -10,6 +10,7 @@ import { useSessao, type Perfil } from '@/lib/sessao';
 const TODOS: Perfil[] = ['solicitante', 'tecnico', 'gestor', 'coordenador', 'auditor'];
 
 const OPERACOES: { titulo: string; descricao: string; Icone: LucideIcon; rota: Href; perfis: Perfil[] }[] = [
+  { titulo: 'Movimentação rápida', descricao: 'Entrada (+) num lote existente ou saída por FEFO (−) em poucos toques.', Icone: Zap, rota: '/rapida', perfis: ['tecnico', 'gestor'] },
   { titulo: 'Escanear código', descricao: 'Câmera ou leitor: cadastrar item novo, receber, retirar ou consultar.', Icone: ScanLine, rota: '/escanear', perfis: TODOS },
   { titulo: 'Compras', descricao: 'Sugestões de compra e pedidos por etapa.', Icone: ShoppingCart, rota: '/compras', perfis: ['tecnico', 'gestor', 'auditor'] },
   { titulo: 'Receber', descricao: 'Entrada de lote em quarentena, com etiqueta QR.', Icone: PackagePlus, rota: '/receber', perfis: ['tecnico', 'gestor'] },

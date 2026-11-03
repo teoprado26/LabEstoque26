@@ -9,6 +9,10 @@ const db = new PGlite();
 
 await db.exec(`
   create role anon; create role authenticated;
+  create schema storage;
+  create table storage.buckets (id text primary key, name text, public boolean);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid);
+  create function storage.foldername(name text) returns text[] language sql immutable as $x$ select string_to_array(name, '/') $x$;
   create schema auth;
   create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb);
   create function auth.uid() returns uuid language sql stable as
@@ -262,3 +266,28 @@ check('movimentação traz quem registrou', (await one(`select usuario_nome from
 await db.query(`select fn_demo_compras($1)`, [labDemo]);
 check('demonstração de compras', Number((await one(`select count(*) n from pedidos_compra where lab_id = $1`, [labDemo])).n), 25);
 console.log(process.exitCode ? '\nHÁ FALHAS' : '\nFase 2 (banco) verificada.');
+
+// Mural da equipe e fotos da bancada (24 h)
+const { id: ativ } = await one(`insert into mural_atividades (lab_id, titulo, descricao, tag) values ($1, 'Troca de filtros', 'Cabine 2', 'Rotina') returning id`, [lab]);
+await expectErr('tag fora da lista', `insert into mural_atividades (lab_id, titulo, tag) values ($1, 'x', 'Festa')`, [lab], 'check');
+await db.query(`insert into mural_comentarios (lab_id, atividade_id, texto) values ($1, $2, 'Eu faço amanhã')`, [lab, ativ]);
+await expectErr('comentário em atividade de outro lab', `insert into mural_comentarios (lab_id, atividade_id, texto) values ($1, $2, 'x')`, [labB, ativ], 'outro laboratório');
+await db.query(`select fn_concluir_atividade($1)`, [ativ]);
+const mur = await one(`select comentarios, realizada_por_nome from v_mural where id = $1`, [ativ]);
+check('mural com comentário e conclusão', [Number(mur.comentarios), mur.realizada_por_nome], [1, 'Gestora']);
+await db.query(`select fn_arquivar_atividade($1)`, [ativ]);
+check('arquivada some do mural', Number((await one(`select count(*) n from v_mural where id = $1`, [ativ])).n), 0);
+await expectErr('foto fora da pasta do lab', `insert into fotos_bancada (lab_id, titulo, caminho) values ($1, 'x', 'outro/arquivo.jpg')`, [lab], 'fora da pasta');
+await expectErr('foto não passa de 24 h', `insert into fotos_bancada (lab_id, titulo, caminho, expira_em) values ($1, 'x', $2, now() + interval '30 hours')`, [lab, `${lab}/${U}/a.jpg`], 'check');
+const { id: foto } = await one(`insert into fotos_bancada (lab_id, titulo, caminho) values ($1, 'Placa de cultura', $2) returning id`, [lab, `${lab}/${U}/a.jpg`]);
+await db.query(`insert into fotos_curtidas (foto_id, lab_id) values ($1, $2)`, [foto, lab]);
+await db.query(`insert into fotos_comentarios (lab_id, foto_id, texto) values ($1, $2, 'Bonita confluência')`, [lab, foto]);
+const fv = await one(`select curtidas, curtida_por_mim, comentarios from v_fotos_bancada where id = $1`, [foto]);
+check('foto com curtida e comentário', [Number(fv.curtidas), fv.curtida_por_mim, Number(fv.comentarios)], [1, true, 1]);
+const { id: velha } = await one(`insert into fotos_bancada (lab_id, titulo, caminho, postada_em, expira_em) values ($1, 'Antiga', $2, now() - interval '50 hours', now() - interval '26 hours') returning id`, [lab, `${lab}/${U}/b.jpg`]);
+check('foto vencida não aparece', Number((await one(`select count(*) n from v_fotos_bancada where id = $1`, [velha])).n), 0);
+await expectErr('não curte foto vencida', `insert into fotos_curtidas (foto_id, lab_id) values ($1, $2)`, [velha, lab], 'expirada');
+check('limpeza devolve o arquivo a remover', (await db.query(`select * from fn_limpar_fotos_vencidas()`)).rows.map((r) => Object.values(r)[0]), [`${lab}/${U}/b.jpg`]);
+await db.query(`select fn_demo_mural($1)`, [labDemo]);
+check('demonstração do mural', Number((await one(`select count(*) n from v_mural where lab_id = $1`, [labDemo])).n), 3);
+console.log(process.exitCode ? '\nHÁ FALHAS' : '\nMural e bancada verificados.');

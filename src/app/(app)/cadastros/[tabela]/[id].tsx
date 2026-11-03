@@ -39,7 +39,7 @@ export default function EditarCadastro() {
         setRefs(Object.fromEntries(camposRef.map((c, i) => [c.chave, listas[i] as OpcaoRef[]])));
       })
       .catch((e) => setErro(mensagemErro(e)));
-  }, [lab, def, id, novo]);
+  }, [lab, def, id, novo, codigo_barras]);
 
   // Opções dos campos de referência; em locais, o "pai" depende do nível escolhido.
   const opcoesRef = useMemo<OpcoesRef>(() => {

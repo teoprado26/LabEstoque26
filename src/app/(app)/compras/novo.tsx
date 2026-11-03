@@ -1,7 +1,7 @@
 // Novo pedido de compra: a partir das sugestões, de um item ou manual. Quantidade na unidade de compra.
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { IconButton } from '@/components/sds';
 import { Aviso, Botao, Campo, Card, Carregando, Selecionar, Tela, T } from '@/components/ui';
@@ -23,22 +23,20 @@ export default function NovoPedido() {
   const [fornecedor, setFornecedor] = useState<string | null>(null);
   const [projeto, setProjeto] = useState<string | null>(null);
   const [obs, setObs] = useState('');
-  const [linhas, setLinhas] = useState<Linha[]>([{ item: params.item ?? null, qtd: '', custo: '' }]);
+  const [editadas, setLinhas] = useState<Linha[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const preenchido = useRef(false);
 
   useEffect(() => {
     if (lab) listarReferencias(lab.id, 'fornecedores').then((f) => setFornecedores(f.filter((x) => x.ativo !== false))).catch((e) => setErro(mensagemErro(e)));
   }, [lab]);
 
-  // Preenche com as sugestões (todas, ou a do item escolhido) quando o estoque carrega.
-  useEffect(() => {
-    if (!estoque || preenchido.current) return;
-    preenchido.current = true;
-    const sug = sugestoesDeCompra(estoque).filter((s) => params.sugestoes || s.item.itemId === params.item);
-    if (sug.length) setLinhas(sug.map((s) => ({ item: s.item.itemId, qtd: String(s.quantidadeCompra), custo: '' })));
+  // Começa com as sugestões (todas, ou a do item escolhido); vira estado próprio na primeira edição.
+  const iniciais = useMemo<Linha[]>(() => {
+    const sug = estoque ? sugestoesDeCompra(estoque).filter((s) => params.sugestoes || s.item.itemId === params.item) : [];
+    return sug.length ? sug.map((s) => ({ item: s.item.itemId, qtd: String(s.quantidadeCompra), custo: '' })) : [{ item: params.item ?? null, qtd: '', custo: '' }];
   }, [estoque, params.item, params.sugestoes]);
+  const linhas = editadas ?? iniciais;
 
   if (!estoque) return erroCarga ? <Tela titulo="Novo pedido" voltar><Aviso>{erroCarga}</Aviso></Tela> : <Carregando />;
   const ativos = estoque.filter((i) => i.ativo).sort((a, b) => a.nome.localeCompare(b.nome));
@@ -46,7 +44,7 @@ export default function NovoPedido() {
   const total = validas.reduce((s, l) => s + (lerNumero(l.qtd) ?? 0) * (lerNumero(l.custo) ?? 0), 0);
   const repetido = new Set(validas.map((l) => l.item)).size !== validas.length;
   const pendencia = validas.length === 0 ? 'Inclua ao menos um item com quantidade.' : repetido ? 'Cada item só pode aparecer uma vez no pedido.' : null;
-  const mudar = (i: number, p: Partial<Linha>) => setLinhas((ls) => ls.map((x, j) => (j === i ? { ...x, ...p } : x)));
+  const mudar = (i: number, p: Partial<Linha>) => setLinhas(linhas.map((x, j) => (j === i ? { ...x, ...p } : x)));
 
   async function enviar() {
     if (!lab) return;
@@ -80,7 +78,7 @@ export default function NovoPedido() {
                 <Selecionar rotulo={`Item ${i + 1}`} valor={l.item} permitirVazio={false} onChange={(v) => mudar(i, { item: v })}
                   opcoes={ativos.map((x) => ({ valor: x.itemId, rotulo: `${x.nome} (${x.codigo})` }))} />
               </View>
-              {linhas.length > 1 ? <IconButton icon={Trash2} label="Remover item" variant="danger-subtle" onPress={() => setLinhas((ls) => ls.filter((_, j) => j !== i))} /> : null}
+              {linhas.length > 1 ? <IconButton icon={Trash2} label="Remover item" variant="danger-subtle" onPress={() => setLinhas(linhas.filter((_, j) => j !== i))} /> : null}
             </View>
             <Campo rotulo={`Quantidade${it ? ` (${it.unidadeCompra})` : ''}`} keyboardType="decimal-pad" value={l.qtd} onChangeText={(t) => mudar(i, { qtd: t })}
               ajuda={it && q ? `= ${fmtQtd(q * it.fator, it.unidade)} · posição atual ${fmtQtd(it.posicaoProjetada, it.unidade)}` : undefined} />
@@ -88,7 +86,7 @@ export default function NovoPedido() {
           </Card>
         );
       })}
-      <Botao tipo="secundario" titulo="Adicionar item" onPress={() => setLinhas((ls) => [...ls, { item: null, qtd: '', custo: '' }])} />
+      <Botao tipo="secundario" titulo="Adicionar item" onPress={() => setLinhas([...linhas, { item: null, qtd: '', custo: '' }])} />
       <Campo rotulo="Observação" value={obs} onChangeText={setObs} multiline />
       {total > 0 ? <T v="subtitle">Total previsto: {fmtMoeda(total)}</T> : null}
       {pendencia ? <T v="caption">{pendencia}</T> : null}

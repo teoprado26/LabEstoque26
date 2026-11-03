@@ -1,12 +1,15 @@
 // Painel: primeiro o que precisa de ação (alertas), depois os indicadores explicados.
 import { router, useFocusEffect, type Href } from 'expo-router';
-import { CalendarClock, ClipboardList, PackageSearch, RefreshCw, ShoppingCart, Wrench, type LucideIcon } from 'lucide-react-native';
+import { CalendarClock, ClipboardList, PackageSearch, RefreshCw, ShoppingCart, Wrench, Zap, type LucideIcon } from 'lucide-react-native';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
+import { BancadaFotos } from '@/components/BancadaFotos';
+import { EsqueletoPainel } from '@/components/Esqueletos';
 import { KpiCard } from '@/components/KpiCard';
+import { MuralEquipe } from '@/components/Mural';
 import { SeloSituacao } from '@/components/SeloSituacao';
 import { IconButton, useCor } from '@/components/sds';
-import { Aviso, Botao, Card, Carregando, Opcoes, Selo, Tela, T } from '@/components/ui';
+import { Aviso, Botao, Card, Opcoes, Selo, Tela, T } from '@/components/ui';
 import { carregarAlertas, type Alertas } from '@/data/alertas';
 import { carregarPainel, ultimosDias, type Painel } from '@/data/servicoKpis';
 import { SITUACOES, situacaoValida } from '@/domain/equipamentos';
@@ -65,7 +68,7 @@ function Linha({ rota, children }: { rota: string; children: ReactNode }) {
 }
 
 export default function PainelTela() {
-  const { lab } = useSessao();
+  const { lab, pode } = useSessao();
   const [dias, setDias] = useState<'30' | '90' | '180'>('30');
   const [painel, setPainel] = useState<Painel | null>(null);
   const [alertas, setAlertas] = useState<Alertas | null>(null);
@@ -89,7 +92,7 @@ export default function PainelTela() {
 
   useFocusEffect(useCallback(() => { atualizar(); }, [atualizar]));
 
-  if (!painel && !erro) return <Carregando />;
+  if (!painel && !erro) return <Tela titulo="Painel"><EsqueletoPainel /></Tela>;
   const a = painel?.atual ?? {};
   const ant = painel?.anterior ?? {};
   const al = alertas;
@@ -103,6 +106,8 @@ export default function PainelTela() {
         {a.K12?.valor != null ? <T v="subtitle">Valor em estoque: {fmtMoeda(a.K12.valor)}</T> : null}
       </View>
       {erro ? <Aviso>{erro}</Aviso> : null}
+      <BancadaFotos />
+      {pode('tecnico', 'gestor') ? <Botao titulo="Movimentação rápida" icone={Zap} onPress={() => router.push('/rapida' as Href)} /> : null}
 
       {al ? (
         <>
@@ -192,11 +197,13 @@ export default function PainelTela() {
         </>
       ) : null}
 
+      <MuralEquipe />
+
       {painel ? (
         <View className="gap-4">
           <T v="title">Indicadores</T>
           <T v="caption">
-            Cada card mostra o valor do período, a meta e se está ✓ na meta, ! em atenção ou ✕ fora da meta. "Dados insuficientes" aparece quando ainda não há registros para um cálculo confiável. Toque no ⓘ para ver a fórmula.
+            Cada card mostra o valor do período, a meta e se está ✓ na meta, ! em atenção ou ✕ fora da meta. “Dados insuficientes” aparece quando ainda não há registros para um cálculo confiável. Toque no ⓘ para ver a fórmula.
           </T>
           <Opcoes rotulo="Período" valor={dias} opcoes={[...PERIODOS]} onChange={setDias} />
           <T v="caption">De {fmtData(painel.periodo.de)} a {fmtData(painel.periodo.ate)}, comparado ao período anterior de mesma duração.</T>

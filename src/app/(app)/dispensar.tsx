@@ -14,6 +14,8 @@ import { fmtData, fmtQtd } from '@/domain/formato';
 import { useSessao } from '@/lib/sessao';
 import { mensagemErro, supabase } from '@/lib/supabase';
 
+const chave = (p: { loteId: string; localId: string }) => `${p.loteId}|${p.localId}`;
+
 export default function Dispensar() {
   // Vindo de uma requisição: item, linha, projeto, finalidade e quantidade já preenchidos.
   const params = useLocalSearchParams<{ item?: string; lote?: string; linha?: string; projeto?: string; finalidade?: string; qtd?: string }>();
@@ -47,12 +49,11 @@ export default function Dispensar() {
   const item = estoque.find((i) => i.itemId === itemId) ?? null;
   const fefo = useMemo(() => (item ? ordenarFEFO(item.posicoes, dia) : []), [item, dia]);
   const sugerido = fefo[0] ?? null;
-  const chave = (p: { loteId: string; localId: string }) => `${p.loteId}|${p.localId}`;
   const escolhida = fefo.find((p) => chave(p) === posicao) ?? sugerido;
   const foraDoFEFO = !!(escolhida && sugerido && (validadeEfetiva(escolhida) ?? '9999') > (validadeEfetiva(sugerido) ?? '9999'));
   const quantidade = lerNumero(qtd);
 
-  function lerLote(loteId: string) {
+  const lerLote = useCallback((loteId: string) => {
     setLendo(false);
     const it = estoque.find((i) => i.posicoes.some((p) => p.loteId === loteId));
     if (!it) {
@@ -63,7 +64,7 @@ export default function Dispensar() {
     const p = it.posicoes.find((x) => x.loteId === loteId && saldoDisponivel(x, dia) > 0);
     setPosicao(p ? chave(p) : null);
     if (!p) setErro('Lote lido não está disponível (quarentena, bloqueado, vencido ou em local não conforme).');
-  }
+  }, [estoque, dia]);
 
   // Lote vindo do Escanear ou da etiqueta: seleciona assim que o estoque carregar.
   const loteInicial = useRef(params.lote ?? null);
@@ -72,7 +73,7 @@ export default function Dispensar() {
       lerLote(loteInicial.current);
       loteInicial.current = null;
     }
-  }, [estoque]);
+  }, [estoque, lerLote]);
 
   async function aoLerCodigo(codigo: string) {
     if (!lab) return;

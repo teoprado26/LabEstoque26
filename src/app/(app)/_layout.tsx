@@ -32,6 +32,8 @@ export default function AppLayout() {
       <Tabs.Screen name="movimentacoes" options={{ title: 'Movimentações', tabBarIcon: ({ color }) => <ArrowLeftRight size={24} color={color} /> }} />
       <Tabs.Screen name="mais" options={{ title: 'Mais', tabBarIcon: ({ color }) => <Menu size={24} color={color} /> }} />
       <Tabs.Screen name="escanear" options={oculto} />
+      <Tabs.Screen name="rapida" options={oculto} />
+      <Tabs.Screen name="relatorios" options={oculto} />
       <Tabs.Screen name="compras" options={oculto} />
       <Tabs.Screen name="analises" options={oculto} />
       <Tabs.Screen name="item/[id]" options={oculto} />

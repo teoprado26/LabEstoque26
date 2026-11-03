@@ -11,6 +11,7 @@ const NOMES: Record<string, string> = {
 
 const ATALHOS: { titulo: string; descricao: string; rota: Href; perfis?: Perfil[] }[] = [
   { titulo: 'Análises', descricao: 'Indicadores completos, ABC-VED, Pareto, vencimentos, fornecedores, consumo e itens parados.', rota: '/analises' },
+  { titulo: 'Relatórios', descricao: 'Relatório técnico em PDF e planilhas CSV para conferência no Excel.', rota: '/relatorios' },
   { titulo: 'Cadastros', descricao: 'Itens, locais, equipamentos, projetos, fornecedores e categorias.', rota: '/cadastros' },
   { titulo: 'Membros', descricao: 'Quem tem acesso ao laboratório e com qual perfil.', rota: '/membros' },
 ];
@@ -27,6 +28,8 @@ export default function Mais() {
     setCarregando(true);
     let { error } = await supabase.rpc('fn_carregar_demonstracao', { p_lab: lab.id });
     if (!error) ({ error } = await supabase.rpc('fn_demo_equipamentos', { p_lab: lab.id }));
+    if (!error) ({ error } = await supabase.rpc('fn_demo_compras', { p_lab: lab.id }));
+    if (!error) ({ error } = await supabase.rpc('fn_demo_mural', { p_lab: lab.id }));
     setCarregando(false);
     setMsg(error ? { tom: 'crit', texto: mensagemErro(error) } : { tom: 'ok', texto: 'Dados de demonstração carregados. Abra o Painel.' });
   }

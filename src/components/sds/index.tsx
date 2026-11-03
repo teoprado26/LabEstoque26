@@ -2,8 +2,8 @@
 // Nomes, variantes e medidas seguem os primitivos do SDS (src/ui/primitives); as cores vêm dos tokens em src/theme.
 import { useColorScheme } from 'nativewind';
 import { Check, ChevronDown, Eye, EyeOff, Info, TriangleAlert, type LucideIcon } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text as RNText, TextInput, View, type TextInputProps } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, ActivityIndicator, Animated, Pressable, Text as RNText, TextInput, View, type TextInputProps } from 'react-native';
 import { HEX, type Cor } from '@/theme/tokens';
 
 /** Cor de um token em hex, no tema atual (para ícones e componentes nativos que não aceitam className). */
@@ -324,4 +324,24 @@ export function Meter({ valor, meta, tom = 'brand', label }: { valor: number; me
       {meta != null ? <View className="absolute h-4 w-0.5 bg-brand" style={{ left: `${Math.max(0, Math.min(100, meta))}%` }} /> : null}
     </View>
   );
+}
+
+// ---------------------------------------------------------------- Skeleton
+/** Bloco de carregamento em esqueleto (pulsa suavemente; sem animação se o sistema pedir menos movimento). */
+export function Skeleton({ altura = 16, largura = '100%', raio = 8 }: { altura?: number; largura?: number | `${number}%`; raio?: number }) {
+  const [opacidade] = useState(() => new Animated.Value(0.5));
+  useEffect(() => {
+    let ativo = true;
+    let laco: Animated.CompositeAnimation | null = null;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduzir) => {
+      if (!ativo || reduzir) return;
+      laco = Animated.loop(Animated.sequence([
+        Animated.timing(opacidade, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacidade, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+      ]));
+      laco.start();
+    });
+    return () => { ativo = false; laco?.stop(); };
+  }, [opacidade]);
+  return <Animated.View className="bg-tertiary" style={{ height: altura, width: largura, borderRadius: raio, opacity: opacidade }} />;
 }

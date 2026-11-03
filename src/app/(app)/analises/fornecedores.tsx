@@ -30,7 +30,7 @@ export default function Fornecedores() {
 
   return (
     <Tela titulo="Fornecedores" voltar>
-      <T v="caption">Lead time = do envio do pedido ao recebimento. "No prazo" = recebido completo até a data prevista. Pelo menos 3 pedidos por fornecedor para um número confiável.</T>
+      <T v="caption">Lead time = do envio do pedido ao recebimento. “No prazo” = recebido completo até a data prevista. Pelo menos 3 pedidos por fornecedor para um número confiável.</T>
       <Opcoes rotulo="Período" valor={dias} onChange={setDias} opcoes={[{ valor: '90', rotulo: '90 dias' }, { valor: '180', rotulo: '180 dias' }, { valor: '365', rotulo: '12 meses' }]} />
       {erro ? <Aviso>{erro}</Aviso> : null}
       {!d ? <Carregando /> : d.pedidos.length === 0 ? <T v="caption">Nenhum pedido recebido no período.</T> : (

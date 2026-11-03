@@ -53,15 +53,16 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSessao(data.session);
       setCarregando(false);
+      if (data.session) recarregarLabs();
     });
-    const { data } = supabase.auth.onAuthStateChange((_evento, s) => setSessao(s));
+    const { data } = supabase.auth.onAuthStateChange((_evento, s) => {
+      setSessao(s);
+      // O Supabase pede para não chamar a API dentro deste callback: adia para depois dele.
+      if (s) setTimeout(() => recarregarLabs(), 0);
+      else setLabs([]);
+    });
     return () => data.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (sessao) recarregarLabs();
-    else setLabs([]);
-  }, [sessao, recarregarLabs]);
+  }, [recarregarLabs]);
 
   const lab = labs.find((l) => l.id === labId) ?? null;
 
