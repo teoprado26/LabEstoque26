@@ -44,7 +44,7 @@ export default function ItemDetalhe() {
 
   return (
     <Tela titulo={item.nome} voltar>
-      <T v="code" className="text-ink-muted">{item.codigo} · criticidade {item.criticidade}</T>
+      <T v="code" className="text-secondary">{item.codigo} · criticidade {item.criticidade}</T>
       <Botao tipo="secundario" titulo={pode('gestor') ? 'Editar cadastro' : 'Ver cadastro'} onPress={() => router.push(`/cadastros/itens/${item.itemId}`)} />
       {erro ? <Aviso>{erro}</Aviso> : null}
       <View className="flex-row gap-2">
@@ -74,7 +74,7 @@ export default function ItemDetalhe() {
       <T v="title">Lotes</T>
       {item.posicoes.length === 0 ? <T v="caption">Sem saldo.</T> : null}
       {item.posicoes.map((p) => (
-        <Card key={`${p.loteId}-${p.localId}`} className={`gap-1 ${fefo && fefo.loteId === p.loteId && fefo.localId === p.localId ? 'border-2 border-primary' : ''}`}>
+        <Card key={`${p.loteId}-${p.localId}`} selecionado={!!fefo && fefo.loteId === p.loteId && fefo.localId === p.localId} className="gap-1">
           <View className="flex-row flex-wrap items-center gap-2">
             <T v="code">Lote {p.numero}</T>
             <SeloLote status={p.status} />

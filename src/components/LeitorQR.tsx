@@ -15,7 +15,7 @@ export function LeitorQR({ onLote, onCancelar }: { onLote: (loteId: string) => v
   if (!permissao) return null;
   if (!permissao.granted) {
     return (
-      <View className="gap-3 rounded-lg border border-line bg-surface-raised p-4">
+      <View className="gap-3 rounded-md border border-default bg-default p-4">
         <T v="body">Permita o uso da câmera para ler o QR code do lote.</T>
         <Botao titulo="Permitir câmera" onPress={pedir} />
         <Botao tipo="secundario" titulo="Cancelar" onPress={onCancelar} />
@@ -25,7 +25,7 @@ export function LeitorQR({ onLote, onCancelar }: { onLote: (loteId: string) => v
 
   return (
     <View className="gap-3">
-      <View className="h-72 overflow-hidden rounded-lg border border-line">
+      <View className="h-72 overflow-hidden rounded-md border border-default">
         <CameraView
           style={{ flex: 1 }}
           facing="back"

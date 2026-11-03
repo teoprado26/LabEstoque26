@@ -122,7 +122,7 @@ export default function ServicoTela() {
       {eq ? (
         <Card className="gap-1">
           <T v="subtitle">{eq.nome}</T>
-          <T v="code" className="text-ink-muted">{eq.codigo}</T>
+          <T v="code" className="text-secondary">{eq.codigo}</T>
           {servico ? <T v="caption">{TIPOS_SERVICO[servico.tipo]}{servico.agendado_para ? ` agendado para ${fmtData(servico.agendado_para)}` : ''}</T> : null}
         </Card>
       ) : null}

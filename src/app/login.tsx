@@ -41,7 +41,7 @@ export default function Login() {
     <Tela>
       <View className="gap-2 pt-12">
         <T v="display">LabEstoque</T>
-        <T v="body" className="text-ink-muted">Estoque laboratorial rastreável, lote a lote.</T>
+        <T v="body" className="text-secondary">Estoque laboratorial rastreável, lote a lote.</T>
       </View>
       {!supabaseConfigurado ? (
         <Aviso tom="warn">Supabase não configurado. Copie .env.example para .env.local, preencha a URL e a chave e reinicie o Expo.</Aviso>

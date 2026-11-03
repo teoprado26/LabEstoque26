@@ -1,6 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { ArrowLeftRight, ClipboardCheck, PackageMinus, PackagePlus, TriangleAlert, Undo2, Wrench, type LucideIcon } from 'lucide-react-native';
 import { View } from 'react-native';
+import { useCor } from '@/components/sds';
 import { Card, Selo, Tela, T } from '@/components/ui';
 import { useSessao, type Perfil } from '@/lib/sessao';
 
@@ -16,11 +17,12 @@ const OPERACOES: { titulo: string; descricao: string; Icone: LucideIcon; rota?: 
 
 export default function Operar() {
   const { pode } = useSessao();
+  const cor = useCor();
   return (
     <Tela titulo="Operar">
       {OPERACOES.filter((o) => pode(...o.perfis)).map(({ titulo, descricao, Icone, rota }) => (
         <Card key={titulo} onPress={rota ? () => router.push(rota) : undefined} className="flex-row items-center gap-3">
-          <Icone size={24} color="rgb(15 107 92)" />
+          <Icone size={24} color={cor('icon-default')} />
           <View className="flex-1 gap-1">
             <T v="subtitle">{titulo}</T>
             <T v="caption">{descricao}</T>

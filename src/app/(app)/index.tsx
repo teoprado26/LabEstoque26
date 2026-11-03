@@ -1,7 +1,8 @@
 import { useFocusEffect, router } from 'expo-router';
 import { RefreshCw } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
+import { IconButton } from '@/components/sds';
 import { KpiCard } from '@/components/KpiCard';
 import { SeloSituacao } from '@/components/SeloSituacao';
 import { listarSituacao, type EquipamentoSituacao } from '@/data/equipamentos';
@@ -58,9 +59,7 @@ export default function PainelTela() {
     <Tela
       titulo="Indicadores"
       acao={
-        <Pressable onPress={atualizar} hitSlop={12} accessibilityRole="button" accessibilityLabel="Atualizar">
-          <RefreshCw size={22} color="rgb(138 149 143)" />
-        </Pressable>
+        <IconButton icon={RefreshCw} label="Atualizar" onPress={atualizar} />
       }
     >
       <View className="gap-1">

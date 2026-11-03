@@ -88,7 +88,7 @@ export default function Dispensar() {
       {lendo ? (
         <LeitorQR onLote={lerLote} onCancelar={() => setLendo(false)} />
       ) : (
-        <Botao tipo="secundario" titulo="Ler QR do lote" icone={<ScanLine size={20} color="rgb(138 149 143)" />} onPress={() => { setErro(null); setSucesso(null); setLendo(true); }} />
+        <Botao tipo="secundario" titulo="Ler QR do lote" icone={ScanLine} onPress={() => { setErro(null); setSucesso(null); setLendo(true); }} />
       )}
 
       {!item ? (
@@ -117,7 +117,7 @@ export default function Dispensar() {
           {fefo.map((p) => {
             const sel = escolhida && chave(p) === chave(escolhida);
             return (
-              <Card key={chave(p)} onPress={() => setPosicao(chave(p))} className={`gap-1 ${sel ? 'border-2 border-primary bg-primary-soft' : ''}`}>
+              <Card key={chave(p)} onPress={() => setPosicao(chave(p))} selecionado={!!sel} className="gap-1">
                 <View className="flex-row flex-wrap items-center gap-2">
                   <T v="code">Lote {p.numero}</T>
                   <SeloLote status={p.status} />

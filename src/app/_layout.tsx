@@ -1,6 +1,6 @@
 import '../../global.css';
-import { IBMPlexMono_400Regular, IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono';
-import { IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, useFonts } from '@expo-google-fonts/ibm-plex-sans';
+import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import { RobotoMono_400Regular } from '@expo-google-fonts/roboto-mono';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme, vars } from 'nativewind';
@@ -13,13 +13,13 @@ import { VARS } from '@/theme/tokens';
 const TEMAS = { light: vars(VARS.light), dark: vars(VARS.dark) };
 
 export default function RootLayout() {
-  const [fontes] = useFonts({ IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexMono_400Regular, IBMPlexMono_500Medium });
+  const [fontes] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold, RobotoMono_400Regular });
   const { colorScheme } = useColorScheme();
   const tema = colorScheme === 'dark' ? 'dark' : 'light';
 
   return (
     <SafeAreaProvider>
-      <View style={[{ flex: 1 }, TEMAS[tema]]} className="bg-surface">
+      <View style={[{ flex: 1 }, TEMAS[tema]]} className="bg-default">
         <StatusBar style={tema === 'dark' ? 'light' : 'dark'} />
         {fontes ? (
           <SessaoProvider>

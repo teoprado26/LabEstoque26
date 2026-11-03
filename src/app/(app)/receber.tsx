@@ -65,7 +65,8 @@ export default function Receber() {
           <Selo tom="warn" texto="QUARENTENA · aguardando conferência" />
           <T v="subtitle">{recebido.item}</T>
           <T v="code">Lote {recebido.numero}</T>
-          <View className="rounded-md bg-white p-3">
+          {/* QR sempre em fundo branco, para leitura em qualquer tema. */}
+          <View className="rounded-md p-3" style={{ backgroundColor: '#ffffff' }}>
             <QRCode value={qrDoLote(recebido.loteId)} size={160} />
           </View>
           <T v="caption">Etiqueta do lote. Imprima e cole na embalagem; o gestor libera o lote após a conferência.</T>
@@ -80,7 +81,7 @@ export default function Receber() {
             .map((i) => (
               <Card key={i.id} onPress={() => setItemId(i.id)}>
                 <T v="subtitle">{i.nome}</T>
-                <T v="code" className="text-ink-muted">{i.codigo}</T>
+                <T v="code" className="text-secondary">{i.codigo}</T>
               </Card>
             ))}
           {itens.length === 0 ? <T v="caption">Nenhum item cadastrado.</T> : null}

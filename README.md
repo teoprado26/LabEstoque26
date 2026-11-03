@@ -8,7 +8,7 @@ Expo SDK 58 + Expo Router + NativeWind 4 · Supabase (Postgres, Auth, RLS) · An
 - [Modelo de dados (ER)](docs/02-modelo-de-dados.md)
 - [Catálogo de KPIs](src/kpis/catalog.ts): configuração lida pelo app
 - [Plano de fases](docs/04-plano-de-fases.md)
-- Design system: tokens em [src/theme/tokens.ts](src/theme/tokens.ts) e [tailwind.config.js](tailwind.config.js)
+- Design system: [Simple Design System](https://github.com/figma/sds) da Figma recriado em React Native ([src/components/sds](src/components/sds/index.tsx)); cores geradas do `theme.css` do SDS em [src/theme/sds-tokens.json](src/theme/sds-tokens.json) por `node scripts/gerar-tokens-sds.mjs <theme.css>`; catálogo dos componentes em `/sds` (só em desenvolvimento)
 
 ## Como rodar
 

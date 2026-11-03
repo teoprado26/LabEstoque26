@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { KPI_POR_ID } from '@/kpis/catalog';
 import { statusDoKpi, variacao, type KpiResultado } from '@/kpis/resultado';
 import { fmtMoeda, fmtNumero, fmtPct } from '@/domain/formato';
+import { useCor } from './sds';
 import { Card, SeloDado, SeloStatus, T } from './ui';
 
 export function formatarValor(id: string, valor: number): string {
@@ -17,6 +18,7 @@ export function formatarValor(id: string, valor: number): string {
 export function KpiCard({ r, anterior, rotulo, detalhe }: { r: KpiResultado; anterior?: KpiResultado; rotulo?: string; detalhe?: string }) {
   const def = KPI_POR_ID[r.id];
   const [metodologia, setMetodologia] = useState(false);
+  const cor = useCor();
   const status = statusDoKpi(def, r.valor);
   const delta = variacao(r.valor, anterior?.valor ?? null);
 
@@ -30,12 +32,12 @@ export function KpiCard({ r, anterior, rotulo, detalhe }: { r: KpiResultado; ant
           accessibilityRole="button"
           accessibilityLabel={`Metodologia de ${def.nome}`}
         >
-          <Info size={18} color="rgb(138 149 143)" />
+          <Info size={18} color={cor('icon-secondary')} />
         </Pressable>
       </View>
 
       {r.valor == null ? (
-        <T v="subtitle" className="text-ink-muted">Dados insuficientes</T>
+        <T v="subtitle" className="text-secondary">Dados insuficientes</T>
       ) : (
         <T v="kpi">{formatarValor(r.id, r.valor)}</T>
       )}
@@ -55,8 +57,8 @@ export function KpiCard({ r, anterior, rotulo, detalhe }: { r: KpiResultado; ant
       {def.meta != null ? <T v="caption">Meta: {def.polaridade === 'menor_melhor' ? '≤' : '≥'} {formatarValor(r.id, def.meta)}</T> : null}
 
       {metodologia ? (
-        <View className="gap-1 rounded-md bg-surface-sunken p-3">
-          <T v="caption" className="text-ink">{def.formula}</T>
+        <View className="gap-1 rounded-md bg-secondary p-3">
+          <T v="caption" className="text-default">{def.formula}</T>
           <T v="caption">{def.metodologia}</T>
         </View>
       ) : null}

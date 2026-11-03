@@ -71,7 +71,7 @@ export default function Equipamento() {
 
   return (
     <Tela titulo={eq.nome} voltar>
-      <T v="code" className="text-ink-muted">{eq.codigo}</T>
+      <T v="code" className="text-secondary">{eq.codigo}</T>
       <SeloSituacao situacao={eq.situacao} />
       {sit?.acao ? <Aviso tom={sit.tom === 'crit' ? 'crit' : sit.tom === 'ok' ? 'ok' : 'warn'}>{sit.acao}</Aviso> : null}
       {erro ? <Aviso>{erro}</Aviso> : null}

@@ -1,7 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
+import { IconButton } from '@/components/sds';
 import { SeloSituacao } from '@/components/SeloSituacao';
 import { Aviso, Campo, Card, Carregando, Opcoes, Selo, Tela, T } from '@/components/ui';
 import { listarAgenda, listarSituacao, type EquipamentoSituacao, type Servico } from '@/data/equipamentos';
@@ -52,10 +53,7 @@ export default function Equipamentos() {
       titulo="Equipamentos"
       voltar
       acao={pode('gestor') ? (
-        <Pressable onPress={() => router.push('/cadastros/equipamentos/novo')} hitSlop={12} accessibilityRole="button" accessibilityLabel="Novo equipamento"
-          className="h-12 w-12 items-center justify-center rounded-md bg-primary">
-          <Plus size={24} color="#ffffff" />
-        </Pressable>
+        <IconButton icon={Plus} variant="primary" label="Novo equipamento" onPress={() => router.push('/cadastros/equipamentos/novo')} />
       ) : undefined}
     >
       {erro ? <Aviso>{erro}</Aviso> : null}
@@ -90,7 +88,7 @@ export default function Equipamentos() {
           {visiveis.map((e) => (
             <Card key={e.equipamento_id} onPress={() => router.push(`/equipamentos/${e.equipamento_id}`)} className="gap-1">
               <T v="subtitle">{e.nome}</T>
-              <T v="code" className="text-ink-muted">{e.codigo}</T>
+              <T v="code" className="text-secondary">{e.codigo}</T>
               <View className="flex-row flex-wrap items-center gap-2">
                 <SeloSituacao situacao={e.situacao} />
                 {e.criticidade === 'V' ? <Selo tom="primary" texto="Vital" /> : null}

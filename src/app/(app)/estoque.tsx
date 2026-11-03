@@ -40,7 +40,7 @@ export default function Estoque() {
             <T v="subtitle" className="flex-1" numberOfLines={1}>{i.nome}</T>
             {i.criticidade === 'V' ? <Selo tom="primary" texto="Vital" /> : null}
           </View>
-          <T v="code" className="text-ink-muted">{i.codigo}</T>
+          <T v="code" className="text-secondary">{i.codigo}</T>
           <View className="flex-row flex-wrap gap-x-4">
             <T v="caption">Disponível <T v="code">{fmtQtd(i.disponivel, i.unidade)}</T></T>
             <T v="caption">Físico <T v="code">{fmtQtd(i.fisico, i.unidade)}</T></T>

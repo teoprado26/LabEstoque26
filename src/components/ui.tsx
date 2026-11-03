@@ -1,34 +1,37 @@
-// Componentes base do design system LabEstoque (tokens em tailwind.config.js).
+// Kit das telas do LabEstoque, montado sobre os componentes do Simple Design System (./sds).
+// Os nomes em português continuam os mesmos nas telas; o visual e as variantes são os do SDS.
 import { router } from 'expo-router';
-import { Check, ChevronDown, ChevronLeft } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
+import type { ReactNode } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { LoteStatus } from '@/domain/tipos';
 import type { Selo as SeloQualidade, StatusKpi } from '@/kpis/resultado';
+import {
+  Button, Card as SdsCard, InputField, Notification, SelectField, SwitchField, Tag, TagToggleGroup,
+  Text, TextCode, TextHeading, TextHeadingSmall, TextSmall, TextSmallStrong, TextStrong, TextValue, useCor, type TagScheme,
+} from './sds';
 
 type Variante = 'display' | 'title' | 'subtitle' | 'body' | 'label' | 'caption' | 'code' | 'kpi';
 
-const VARIANTES: Record<Variante, string> = {
-  display: 'font-sans-semibold text-display text-ink',
-  title: 'font-sans-semibold text-title text-ink',
-  subtitle: 'font-sans-semibold text-subtitle text-ink',
-  body: 'font-sans text-body text-ink',
-  label: 'font-sans-medium text-label text-ink',
-  caption: 'font-sans text-caption text-ink-muted',
-  code: 'font-mono text-code text-ink',
-  kpi: 'font-mono-medium text-kpi text-ink',
-};
+const VARIANTES = {
+  display: TextHeading,
+  title: TextHeadingSmall,
+  subtitle: TextStrong,
+  body: Text,
+  label: TextSmallStrong,
+  caption: TextSmall,
+  code: TextCode,
+  kpi: TextValue,
+} satisfies Record<Variante, unknown>;
 
 export function T({ v = 'body', className = '', children, numberOfLines }: { v?: Variante; className?: string; children: ReactNode; numberOfLines?: number }) {
-  return (
-    <Text className={`${VARIANTES[v]} ${className}`} numberOfLines={numberOfLines}>
-      {children}
-    </Text>
-  );
+  const C = VARIANTES[v];
+  return <C className={className} numberOfLines={numberOfLines}>{children}</C>;
 }
 
 export function Tela({ titulo, children, rolar = true, acao, voltar }: { titulo?: string; children: ReactNode; rolar?: boolean; acao?: ReactNode; voltar?: boolean }) {
+  const cor = useCor();
   const corpo = (
     <View className="gap-4 px-4 pb-6">
       {voltar ? (
@@ -37,13 +40,13 @@ export function Tela({ titulo, children, rolar = true, acao, voltar }: { titulo?
           accessibilityRole="button"
           className="min-h-10 flex-row items-center gap-1 self-start pt-2"
         >
-          <ChevronLeft size={20} color="rgb(138 149 143)" />
-          <T v="label" className="text-ink-muted">Voltar</T>
+          <ChevronLeft size={20} color={cor('icon-secondary')} />
+          <TextSmall>Voltar</TextSmall>
         </Pressable>
       ) : null}
       {titulo ? (
-        <View className="flex-row items-center justify-between pt-2">
-          <T v="display">{titulo}</T>
+        <View className="flex-row items-center justify-between gap-3 pt-2">
+          <TextHeading className="flex-1">{titulo}</TextHeading>
           {acao}
         </View>
       ) : null}
@@ -51,169 +54,63 @@ export function Tela({ titulo, children, rolar = true, acao, voltar }: { titulo?
     </View>
   );
   return (
-    <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-default" edges={['top']}>
       {rolar ? <ScrollView keyboardShouldPersistTaps="handled">{corpo}</ScrollView> : corpo}
     </SafeAreaView>
   );
 }
 
-export function Card({ children, className = '', onPress }: { children: ReactNode; className?: string; onPress?: () => void }) {
-  const cls = `rounded-lg border border-line bg-surface-raised p-4 ${className}`;
-  return onPress ? (
-    <Pressable onPress={onPress} className={`${cls} active:bg-surface-sunken`} accessibilityRole="button">
-      {children}
-    </Pressable>
-  ) : (
-    <View className={cls}>{children}</View>
-  );
+export function Card({ children, className = '', onPress, selecionado }: { children: ReactNode; className?: string; onPress?: () => void; selecionado?: boolean }) {
+  return <SdsCard padding="400" onPress={onPress} className={className} selected={selecionado}>{children}</SdsCard>;
 }
 
 export function Botao({
   titulo, onPress, tipo = 'primario', desabilitado, carregando, icone,
 }: {
-  titulo: string; onPress: () => void; tipo?: 'primario' | 'secundario' | 'perigo';
-  desabilitado?: boolean; carregando?: boolean; icone?: ReactNode;
+  titulo: string; onPress: () => void; tipo?: 'primario' | 'secundario' | 'perigo' | 'sutil';
+  desabilitado?: boolean; carregando?: boolean; icone?: Parameters<typeof Button>[0]['iconStart'];
 }) {
-  const fundo = tipo === 'primario' ? 'bg-primary border-primary' : 'bg-surface-raised border-line-strong';
-  const texto = tipo === 'primario' ? 'text-on-primary' : tipo === 'perigo' ? 'text-status-crit' : 'text-ink';
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={desabilitado || carregando}
-      accessibilityRole="button"
-      className={`min-h-12 flex-row items-center justify-center gap-2 rounded-md border px-4 ${fundo} ${desabilitado ? 'opacity-50' : 'active:opacity-80'}`}
-    >
-      {carregando ? <ActivityIndicator /> : icone}
-      <Text className={`font-sans-medium text-label ${texto}`}>{titulo}</Text>
-    </Pressable>
-  );
+  const variant = tipo === 'primario' ? 'primary' : tipo === 'perigo' ? 'danger-primary' : tipo === 'sutil' ? 'subtle' : 'neutral';
+  return <Button variant={variant} onPress={onPress} isDisabled={desabilitado} isLoading={carregando} iconStart={icone}>{titulo}</Button>;
 }
 
-export function Campo({ rotulo, ajuda, erro, ...props }: TextInputProps & { rotulo: string; ajuda?: string; erro?: string | null }) {
-  return (
-    <View className="gap-1">
-      <T v="label">{rotulo}</T>
-      <TextInput
-        placeholderTextColor="rgb(138 149 143)"
-        className={`min-h-12 rounded-md border bg-surface-raised px-3 font-sans text-body text-ink ${erro ? 'border-status-crit' : 'border-line-strong'}`}
-        {...props}
-      />
-      {erro ? <T v="caption" className="text-status-crit">{erro}</T> : ajuda ? <T v="caption">{ajuda}</T> : null}
-    </View>
-  );
+export function Campo({ rotulo, ajuda, erro, editable, ...props }: TextInputProps & { rotulo: string; ajuda?: string; erro?: string | null }) {
+  return <InputField label={rotulo} description={ajuda} errorMessage={erro} isDisabled={editable === false} {...props} />;
 }
 
 export function Opcoes<V extends string>({
   rotulo, valor, opcoes, onChange, ajuda, erro, desabilitado,
 }: { rotulo: string; valor: V | null; opcoes: { valor: V; rotulo: string }[]; onChange: (v: V) => void; ajuda?: string; erro?: string | null; desabilitado?: boolean }) {
   return (
-    <View className={`gap-1 ${desabilitado ? 'opacity-60' : ''}`} pointerEvents={desabilitado ? 'none' : 'auto'}>
-      <T v="label">{rotulo}</T>
-      <View className="flex-row flex-wrap gap-2">
-        {opcoes.map((o) => {
-          const ativo = o.valor === valor;
-          return (
-            <Pressable
-              key={o.valor}
-              onPress={() => onChange(o.valor)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: ativo }}
-              className={`min-h-10 justify-center rounded-sm border px-3 ${ativo ? 'border-primary bg-primary-soft' : 'border-line-strong bg-surface-raised'}`}
-            >
-              <Text className={`font-sans-medium text-label ${ativo ? 'text-primary' : 'text-ink'}`}>{o.rotulo}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {erro ? <T v="caption" className="text-status-crit">{erro}</T> : ajuda ? <T v="caption">{ajuda}</T> : null}
-    </View>
+    <TagToggleGroup label={rotulo} value={valor} onChange={onChange} description={ajuda} errorMessage={erro} isDisabled={desabilitado}
+      options={opcoes.map((o) => ({ value: o.valor, label: o.rotulo }))} />
   );
 }
 
 export function Interruptor({ rotulo, ajuda, valor, onChange, desabilitado }: { rotulo: string; ajuda?: string; valor: boolean; onChange: (v: boolean) => void; desabilitado?: boolean }) {
-  return (
-    <View className="flex-row items-center gap-3">
-      <View className="flex-1 gap-1">
-        <T v="label">{rotulo}</T>
-        {ajuda ? <T v="caption">{ajuda}</T> : null}
-      </View>
-      <Switch value={valor} onValueChange={onChange} disabled={desabilitado} accessibilityLabel={rotulo}
-        trackColor={{ true: 'rgb(15 107 92)', false: 'rgb(138 149 143)' }} thumbColor="#ffffff" />
-    </View>
-  );
+  return <SwitchField label={rotulo} description={ajuda} isSelected={valor} onChange={onChange} isDisabled={desabilitado} />;
 }
 
-/** Seleção numa lista longa: mostra o escolhido; ao tocar, abre busca e opções. */
+/** Seleção numa lista longa (SelectField do SDS, com busca quando há muitas opções). */
 export function Selecionar({
   rotulo, valor, opcoes, onChange, ajuda, erro, permitirVazio = true, desabilitado,
 }: {
   rotulo: string; valor: string | null; opcoes: { valor: string; rotulo: string; recuo?: number }[];
   onChange: (v: string | null) => void; ajuda?: string; erro?: string | null; permitirVazio?: boolean; desabilitado?: boolean;
 }) {
-  const [aberto, setAberto] = useState(false);
-  const [busca, setBusca] = useState('');
-  const atual = opcoes.find((o) => o.valor === valor);
-  const filtradas = opcoes.filter((o) => !busca || o.rotulo.toLowerCase().includes(busca.toLowerCase()));
-  const escolher = (v: string | null) => {
-    onChange(v);
-    setAberto(false);
-    setBusca('');
-  };
   return (
-    <View className="gap-1">
-      <T v="label">{rotulo}</T>
-      <Pressable
-        onPress={() => !desabilitado && setAberto((a) => !a)}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: aberto, disabled: desabilitado }}
-        className={`min-h-12 flex-row items-center justify-between rounded-md border bg-surface-raised px-3 ${erro ? 'border-status-crit' : 'border-line-strong'} ${desabilitado ? 'opacity-60' : ''}`}
-      >
-        <Text className={`flex-1 font-sans text-body ${atual ? 'text-ink' : 'text-ink-muted'}`} numberOfLines={1}>{atual?.rotulo ?? 'Nenhum'}</Text>
-        <ChevronDown size={20} color="rgb(138 149 143)" />
-      </Pressable>
-      {aberto ? (
-        <View className="overflow-hidden rounded-md border border-line bg-surface-raised">
-          {opcoes.length > 8 ? (
-            <TextInput placeholder="Buscar" placeholderTextColor="rgb(138 149 143)" value={busca} onChangeText={setBusca} autoFocus
-              className="min-h-12 border-b border-line px-3 font-sans text-body text-ink" />
-          ) : null}
-          {permitirVazio ? (
-            <Pressable onPress={() => escolher(null)} className="min-h-12 justify-center px-3 active:bg-surface-sunken">
-              <Text className="font-sans text-body text-ink-muted">Nenhum</Text>
-            </Pressable>
-          ) : null}
-          {filtradas.slice(0, 50).map((o) => (
-            <Pressable key={o.valor} onPress={() => escolher(o.valor)} accessibilityRole="radio" accessibilityState={{ selected: o.valor === valor }}
-              className={`min-h-12 flex-row items-center gap-2 border-t border-line px-3 active:bg-surface-sunken ${o.valor === valor ? 'bg-primary-soft' : ''}`}
-              style={{ paddingLeft: 12 + (o.recuo ?? 0) * 16 }}>
-              <Text className={`flex-1 font-sans text-body ${o.valor === valor ? 'text-primary' : 'text-ink'}`}>{o.rotulo}</Text>
-              {o.valor === valor ? <Check size={18} color="rgb(15 107 92)" /> : null}
-            </Pressable>
-          ))}
-          {filtradas.length === 0 ? <View className="p-3"><T v="caption">Nada encontrado.</T></View> : null}
-        </View>
-      ) : null}
-      {erro ? <T v="caption" className="text-status-crit">{erro}</T> : ajuda ? <T v="caption">{ajuda}</T> : null}
-    </View>
+    <SelectField label={rotulo} value={valor} onChange={onChange} description={ajuda} errorMessage={erro} allowEmpty={permitirVazio} isDisabled={desabilitado}
+      placeholder="Nenhum" options={opcoes.map((o) => ({ value: o.valor, label: o.rotulo, indent: o.recuo }))} />
   );
 }
 
 type Tom = 'ok' | 'warn' | 'crit' | 'primary' | 'neutro';
-const TONS: Record<Tom, string> = {
-  ok: 'bg-status-ok-soft text-status-ok',
-  warn: 'bg-status-warn-soft text-status-warn',
-  crit: 'bg-status-crit-soft text-status-crit',
-  primary: 'bg-primary-soft text-primary',
-  neutro: 'bg-surface-sunken text-ink-muted',
-};
+const ESQUEMA: Record<Tom, TagScheme> = { ok: 'positive', warn: 'warning', crit: 'danger', primary: 'brand', neutro: 'neutral' };
 
+/** Tag do SDS (variante secondary). Status sempre leva palavra e, quando aplicável, ícone: cor nunca é o único sinal. */
 export function Selo({ tom, texto, tracejado }: { tom: Tom; texto: string; tracejado?: boolean }) {
-  const [bg, fg] = TONS[tom].split(' ');
-  return (
-    <View className={`self-start rounded-sm px-2 py-0.5 ${bg} ${tracejado ? 'border border-dashed border-line-strong' : ''}`}>
-      <Text className={`font-sans-medium text-caption ${fg}`}>{texto}</Text>
-    </View>
-  );
+  const tag = <Tag scheme={ESQUEMA[tom]}>{texto}</Tag>;
+  return tracejado ? <View className="self-start rounded-md border border-dashed border-default-secondary">{tag}</View> : tag;
 }
 
 const TOM_LOTE: Record<LoteStatus, Tom> = {
@@ -235,16 +132,16 @@ export function SeloStatus({ status }: { status: StatusKpi }) {
   return null;
 }
 
+/** Notification do SDS: alert (erro), warning, positive. */
 export function Aviso({ tom = 'crit', children }: { tom?: 'crit' | 'warn' | 'ok'; children: ReactNode }) {
+  return <Notification variant={tom === 'crit' ? 'alert' : tom === 'warn' ? 'warning' : 'positive'}>{children}</Notification>;
+}
+
+export function Carregando() {
+  const cor = useCor();
   return (
-    <View className={`rounded-md px-3 py-2 ${TONS[tom].split(' ')[0]}`}>
-      <Text className={`font-sans text-label ${TONS[tom].split(' ')[1]}`}>{children}</Text>
+    <View className="flex-1 items-center justify-center bg-default p-6">
+      <ActivityIndicator color={cor('icon-default')} />
     </View>
   );
 }
-
-export const Carregando = () => (
-  <View className="flex-1 items-center justify-center bg-surface p-6">
-    <ActivityIndicator />
-  </View>
-);

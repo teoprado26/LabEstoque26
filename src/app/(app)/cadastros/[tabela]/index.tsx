@@ -1,7 +1,8 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
+import { IconButton } from '@/components/sds';
 import { ordenarArvore, type NoLocal } from '@/cadastros/arvoreLocais';
 import { CADASTROS, NIVEIS_LOCAL, TIPOS_EQUIPAMENTO, TIPOS_ITEM, ehTabelaCadastro, type Registro, type TabelaCadastro } from '@/cadastros/config';
 import { Aviso, Campo, Card, Carregando, Interruptor, Selo, Tela, T } from '@/components/ui';
@@ -92,10 +93,7 @@ export default function ListaCadastro() {
       voltar
       acao={
         pode('gestor') ? (
-          <Pressable onPress={() => router.push(`/cadastros/${def.tabela}/novo`)} hitSlop={12} accessibilityRole="button"
-            accessibilityLabel={`Novo ${def.singular}`} className="h-12 w-12 items-center justify-center rounded-md bg-primary">
-            <Plus size={24} color="#ffffff" />
-          </Pressable>
+          <IconButton icon={Plus} variant="primary" label={`Novo ${def.singular}`} onPress={() => router.push(`/cadastros/${def.tabela}/novo`)} />
         ) : undefined
       }
     >
