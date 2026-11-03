@@ -13,6 +13,8 @@ export const supabase = createClient(url ?? 'http://localhost', chave ?? 'sem-ch
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',
+    // PKCE: o retorno do Google e do link por e-mail traz um ?code= de uso único.
+    flowType: 'pkce',
   },
 });
 

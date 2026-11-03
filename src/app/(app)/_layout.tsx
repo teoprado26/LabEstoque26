@@ -35,6 +35,14 @@ export default function AppLayout() {
       <Tabs.Screen name="receber" options={oculto} />
       <Tabs.Screen name="cadastros" options={oculto} />
       <Tabs.Screen name="equipamentos" options={oculto} />
+      <Tabs.Screen name="lote/[id]" options={oculto} />
+      <Tabs.Screen name="perda" options={oculto} />
+      <Tabs.Screen name="transferir" options={oculto} />
+      <Tabs.Screen name="devolver" options={oculto} />
+      <Tabs.Screen name="devolucoes" options={oculto} />
+      <Tabs.Screen name="inventario" options={oculto} />
+      <Tabs.Screen name="requisicoes" options={oculto} />
+      <Tabs.Screen name="membros" options={oculto} />
     </Tabs>
   );
 }

@@ -53,8 +53,8 @@ const { id: item } = await one(`
   values ($1, 'DMEM', 'Meio DMEM', 'meio_cultura', 'frasco 500 mL', 'mL', 500, false, 2, 8, 30, 'V') returning id`, [lab]);
 
 // Recebimento: 2 frascos × R$ 100 → 1000 mL a R$ 0,20/mL, em QUARENTENA
-const { id: loteA } = await one(`select fn_receber($1, 'A1', current_date + 10, 2, $2, 100) as id`, [item, geladeira]);
-const { id: loteB } = await one(`select fn_receber($1, 'B1', current_date + 200, 1, $2, 130) as id`, [item, geladeira]);
+const { id: loteA } = await one(`select fn_receber($1, 'A1', fn_hoje() + 10, 2, $2, 100) as id`, [item, geladeira]);
+const { id: loteB } = await one(`select fn_receber($1, 'B1', fn_hoje() + 200, 1, $2, 130) as id`, [item, geladeira]);
 check('conversão para unidade de estoque', (await one(`select saldo from v_saldo where lote_id = $1`, [loteA])).saldo, '1000');
 check('quarentena não é disponível', (await one(`select disponivel from v_disponivel where lote_id = $1`, [loteA])).disponivel, '0');
 check('custo médio ponderado móvel', Number((await one(`select round(custo_medio, 4) c from itens where id = $1`, [item])).c), 0.22);
@@ -79,7 +79,7 @@ await expectErr('DELETE de item bloqueado', `delete from itens`, [], 'imutáveis
 check('saldo do lote A após dispensação', (await one(`select saldo from v_saldo where lote_id = $1`, [loteA])).saldo, '900');
 
 // Reserva de item para P2: P1 não pode consumir o reservado
-await db.query(`insert into reservas (lab_id, item_id, quantidade, projeto_id, uso_previsto, valida_ate) values ($1, $2, 1300, $3, current_date + 5, current_date + 10)`, [lab, item, proj2]);
+await db.query(`insert into reservas (lab_id, item_id, quantidade, projeto_id, uso_previsto, valida_ate) values ($1, $2, 1300, $3, fn_hoje() + 5, fn_hoje() + 10)`, [lab, item, proj2]);
 check('disponível do item desconta reserva', (await one(`select disponivel from v_posicao_item where item_id = $1`, [item])).disponivel, '90');
 await expectErr('reserva protege saldo de outro projeto', `select fn_dispensar($1, $2, 200, $3, 'x')`, [loteA, geladeira, proj], 'reservada');
 await db.query(`select fn_dispensar($1, $2, 200, $3, 'x')`, [loteA, geladeira, proj2]);
@@ -167,30 +167,30 @@ const sit = async () => (await one(`select situacao from v_equipamentos_situacao
 await expectErr('exige calibração sem periodicidade', `insert into equipamentos (lab_id, codigo, nome, tipo, exige_calibracao) values ($1, 'X', 'X', 'pipeta', true)`, [lab], 'periodicidade');
 await expectErr('local de outro laboratório', `update equipamentos set local_id = (select id from locais where lab_id = $1 limit 1) where id = $2`, [labDemo, bal], 'outro laboratório');
 check('sem calibração registrada', await sit(), 'sem_calibracao');
-await expectErr('não agenda no passado', `select fn_agendar_servico($1, 'calibracao', current_date - 1)`, [bal], 'passado');
-const { id: agCal } = await one(`select fn_agendar_servico($1, 'calibracao', current_date + 7, 'Lab. Cal RBC') as id`, [bal]);
+await expectErr('não agenda no passado', `select fn_agendar_servico($1, 'calibracao', fn_hoje() - 1)`, [bal], 'passado');
+const { id: agCal } = await one(`select fn_agendar_servico($1, 'calibracao', fn_hoje() + 7, 'Lab. Cal RBC') as id`, [bal]);
 check('agenda aparece na situação', (await one(`select calibracao_agendada is not null a from v_equipamentos_situacao where equipamento_id = $1`, [bal])).a, true);
-await expectErr('calibração exige resultado', `select fn_concluir_servico($1, current_date)`, [agCal], 'resultado');
-await db.query(`select fn_concluir_servico($1, current_date - 400, null, null, null, 850, 'aprovado', 'CERT-123')`, [agCal]);
+await expectErr('calibração exige resultado', `select fn_concluir_servico($1, fn_hoje())`, [agCal], 'resultado');
+await db.query(`select fn_concluir_servico($1, fn_hoje() - 400, null, null, null, 850, 'aprovado', 'CERT-123')`, [agCal]);
 check('validade padrão = realização + periodicidade → vencida', await sit(), 'calibracao_vencida');
 await expectErr('serviço concluído é imutável', `update servicos_equipamento set custo = 1 where id = $1`, [agCal], 'encerrado');
-await db.query(`select fn_concluir_servico(null, current_date - 340, null, null, null, null, 'aprovado', 'CERT-124', null, null, null, $1, 'calibracao')`, [bal]);
+await db.query(`select fn_concluir_servico(null, fn_hoje() - 340, null, null, null, null, 'aprovado', 'CERT-124', null, null, null, $1, 'calibracao')`, [bal]);
 check('calibração vence em 25 dias → a vencer', await sit(), 'calibracao_a_vencer');
-await db.query(`select fn_concluir_servico(null, current_date, null, null, null, null, 'reprovado', 'CERT-125', null, current_date + 365, null, $1, 'calibracao')`, [bal]);
+await db.query(`select fn_concluir_servico(null, fn_hoje(), null, null, null, null, 'reprovado', 'CERT-125', null, fn_hoje() + 365, null, $1, 'calibracao')`, [bal]);
 check('última calibração reprovada', await sit(), 'calibracao_reprovada');
-await db.query(`select fn_concluir_servico(null, current_date, null, null, null, null, 'aprovado', 'CERT-126', null, current_date + 365, null, $1, 'calibracao')`, [bal]);
+await db.query(`select fn_concluir_servico(null, fn_hoje(), null, null, null, null, 'aprovado', 'CERT-126', null, fn_hoje() + 365, null, $1, 'calibracao')`, [bal]);
 check('sem preventiva registrada', await sit(), 'sem_manutencao');
-await db.query(`select fn_concluir_servico(null, current_date - 200, 'limpeza e ajuste', null, null, null, null, null, null, null, null, $1, 'manutencao_preventiva')`, [bal]);
+await db.query(`select fn_concluir_servico(null, fn_hoje() - 200, 'limpeza e ajuste', null, null, null, null, null, null, null, null, $1, 'manutencao_preventiva')`, [bal]);
 check('preventiva vencida há 20 dias → atrasada', await sit(), 'manutencao_atrasada');
-await expectErr('resultado só em calibração', `select fn_concluir_servico(null, current_date, null, null, null, null, 'aprovado', null, null, null, null, $1, 'manutencao_preventiva')`, [bal], 'só se aplicam');
+await expectErr('resultado só em calibração', `select fn_concluir_servico(null, fn_hoje(), null, null, null, null, 'aprovado', null, null, null, null, $1, 'manutencao_preventiva')`, [bal], 'só se aplicam');
 const { id: corr } = await one(`select fn_iniciar_manutencao($1, 'display apagado') as id`, [bal]);
 check('corretiva em andamento → em manutenção', await sit(), 'em_manutencao');
-await db.query(`select fn_concluir_servico($1, current_date, 'troca da fonte', 'Assistência X', null, 320)`, [corr]);
-await db.query(`select fn_concluir_servico(null, current_date, 'preventiva semestral', null, null, null, null, null, null, null, null, $1, 'manutencao_preventiva')`, [bal]);
+await db.query(`select fn_concluir_servico($1, fn_hoje(), 'troca da fonte', 'Assistência X', null, 320)`, [corr]);
+await db.query(`select fn_concluir_servico(null, fn_hoje(), 'preventiva semestral', null, null, null, null, null, null, null, null, $1, 'manutencao_preventiva')`, [bal]);
 check('tudo em dia', await sit(), 'ok');
-const { id: agMan } = await one(`select fn_agendar_servico($1, 'manutencao_preventiva', current_date + 170) as id`, [bal]);
+const { id: agMan } = await one(`select fn_agendar_servico($1, 'manutencao_preventiva', fn_hoje() + 170) as id`, [bal]);
 await expectErr('cancelar exige motivo', `select fn_cancelar_servico($1, ' ')`, [agMan], 'motivo');
-await db.query(`select fn_reagendar_servico($1, current_date + 175, 'técnico indisponível')`, [agMan]);
+await db.query(`select fn_reagendar_servico($1, fn_hoje() + 175, 'técnico indisponível')`, [agMan]);
 await db.query(`select fn_cancelar_servico($1, 'equipamento será substituído')`, [agMan]);
 check('cancelado guarda o motivo', (await one(`select status from servicos_equipamento where id = $1`, [agMan])).status, 'cancelado');
 await expectErr('serviço não é apagado', `delete from servicos_equipamento`, [], 'imutáveis');
@@ -202,3 +202,23 @@ const sits = (await db.query(`select codigo, situacao from v_equipamentos_situac
 check('situações da demonstração', sits.map((r) => `${r.codigo}:${r.situacao}`),
   ['PAT-0101:ok', 'PAT-0230:manutencao_atrasada', 'PAT-0315:em_manutencao', 'PIP-020:calibracao_a_vencer', 'TER-004:calibracao_vencida']);
 console.log(process.exitCode ? '\nHÁ FALHAS' : '\nDemonstração de equipamentos verificada.');
+
+// Membros e encerramento de inventário
+const U2 = '00000000-0000-0000-0000-000000000002';
+await db.query(`insert into auth.users values ($1, 'tecnica@lab.br', '{"nome":"Técnica"}')`, [U2]);
+await expectErr('membro precisa ter conta', `select fn_adicionar_membro($1, 'ninguem@lab.br', 'tecnico')`, [lab], 'Não há conta');
+await db.query(`select fn_adicionar_membro($1, 'TECNICA@lab.br', 'tecnico')`, [lab]);
+const membros = (await db.query(`select nome, perfis from fn_listar_membros($1)`, [lab])).rows;
+check('lista de membros com perfis', membros.map((m) => `${m.nome}:${m.perfis}`).sort(), ['Gestora:{administrador,gestor}', 'Técnica:{tecnico}']);
+await expectErr('não remove o último administrador', `select fn_remover_perfil($1, $2, 'administrador')`, [lab, U], 'pelo menos um administrador');
+await db.query(`select fn_remover_perfil($1, $2, 'tecnico')`, [lab, U2]);
+check('perfil removido sai da lista', (await db.query(`select * from fn_listar_membros($1)`, [lab])).rows.length, 1);
+await expectErr('não encerra com contagem pendente', `select fn_encerrar_inventario($1)`, [inv], 'sem contagem');
+for (const c of (await db.query(`select id, lote_id, local_id from inventario_contagens where inventario_id = $1 and status = 'pendente'`, [inv])).rows) {
+  await db.query(`select fn_registrar_contagem($1, fn_saldo_lote_local($2, $3))`, [c.id, c.lote_id, c.local_id]);
+  await db.query(`select fn_aprovar_ajuste($1, false, 'sem divergência')`, [c.id]);
+}
+await db.query(`select fn_encerrar_inventario($1)`, [inv]);
+check('inventário com tudo decidido encerra', (await one(`select status from inventarios where id = $1`, [inv])).status, 'encerrado');
+check('detalhe da contagem traz nomes', Boolean((await one(`select item_nome, lote_numero, local_nome from v_inventario_contagens_detalhe where inventario_id = $1 limit 1`, [inv])).item_nome), true);
+console.log(process.exitCode ? '\nHÁ FALHAS' : '\nMembros e inventário verificados.');

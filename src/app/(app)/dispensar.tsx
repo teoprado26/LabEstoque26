@@ -1,4 +1,4 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ScanLine } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -14,7 +14,8 @@ import { useSessao } from '@/lib/sessao';
 import { mensagemErro, supabase } from '@/lib/supabase';
 
 export default function Dispensar() {
-  const params = useLocalSearchParams<{ item?: string; lote?: string }>();
+  // Vindo de uma requisição: item, linha, projeto, finalidade e quantidade já preenchidos.
+  const params = useLocalSearchParams<{ item?: string; lote?: string; linha?: string; projeto?: string; finalidade?: string; qtd?: string }>();
   const { lab } = useSessao();
   const [estoque, setEstoque] = useState<ItemEstoque[]>([]);
   const [projetos, setProjetos] = useState<Opcao[]>([]);
@@ -22,9 +23,9 @@ export default function Dispensar() {
   const [itemId, setItemId] = useState<string | null>(params.item ?? null);
   const [posicao, setPosicao] = useState<string | null>(null); // `${loteId}|${localId}`
   const [busca, setBusca] = useState('');
-  const [qtd, setQtd] = useState('');
-  const [projeto, setProjeto] = useState<string | null>(null);
-  const [finalidade, setFinalidade] = useState('');
+  const [qtd, setQtd] = useState(params.qtd ?? '');
+  const [projeto, setProjeto] = useState<string | null>(params.projeto ?? null);
+  const [finalidade, setFinalidade] = useState(params.finalidade ?? '');
   const [justificativa, setJustificativa] = useState('');
   const [lendo, setLendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export default function Dispensar() {
     const { error } = await supabase.rpc('fn_dispensar', {
       p_lote: escolhida.loteId, p_local: escolhida.localId, p_qtd: quantidade, p_projeto: projeto,
       p_finalidade: finalidade.trim(), p_justificativa_fefo: foraDoFEFO ? justificativa.trim() : null,
+      p_requisicao_linha: params.linha ?? null,
     });
     setEnviando(false);
     if (error) return setErro(mensagemErro(error));
@@ -83,6 +85,8 @@ export default function Dispensar() {
   return (
     <Tela titulo="Dispensar" voltar>
       {sucesso ? <Aviso tom="ok">{sucesso}</Aviso> : null}
+      {sucesso && params.linha ? <Botao tipo="secundario" titulo="Voltar para a requisição" onPress={() => router.back()} /> : null}
+      {params.linha && !sucesso ? <Aviso tom="warn">Atendendo uma requisição: a quantidade dispensada será registrada na linha do pedido.</Aviso> : null}
       {erro ? <Aviso>{erro}</Aviso> : null}
 
       {lendo ? (

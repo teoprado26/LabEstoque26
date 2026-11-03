@@ -1,7 +1,7 @@
 // Componentes do Simple Design System (github.com/figma/sds) recriados em React Native.
 // Nomes, variantes e medidas seguem os primitivos do SDS (src/ui/primitives); as cores vêm dos tokens em src/theme.
 import { useColorScheme } from 'nativewind';
-import { Check, ChevronDown, Info, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { Check, ChevronDown, Eye, EyeOff, Info, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text as RNText, TextInput, View, type TextInputProps } from 'react-native';
 import { HEX, type Cor } from '@/theme/tokens';
@@ -62,7 +62,7 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!desab, busy: !!isLoading }}
-      className={`flex-row items-center justify-center gap-2 rounded-md border ${tamanho} ${desab ? 'bg-disabled border-disabled' : `${v.caixa} ${v.pressionado}`}`}
+      className={`flex-row items-center justify-center gap-2 rounded-md border ${tamanho} ${desab ? (variant.endsWith('subtle') ? 'bg-transparent border-transparent' : 'bg-disabled border-disabled') : `${v.caixa} ${v.pressionado}`}`}
     >
       {isLoading ? <ActivityIndicator color={cor(desab ? 'text-disabled' : v.icone)} /> : Icone ? <Icone size={size === 'small' ? 14 : 16} color={cor(desab ? 'text-disabled' : v.icone)} /> : null}
       <RNText className={`font-sans ${size === 'small' ? 'text-body-small' : 'text-body'} ${desab ? 'text-disabled' : v.texto}`}>{children}</RNText>
@@ -103,24 +103,35 @@ export type InputFieldProps = Omit<TextInputProps, 'editable'> & {
   label: string; description?: string; errorMessage?: string | null; isDisabled?: boolean;
 };
 
-export function InputField({ label, description, errorMessage, isDisabled, multiline, ...props }: InputFieldProps) {
+export function InputField({ label, description, errorMessage, isDisabled, multiline, secureTextEntry, ...props }: InputFieldProps) {
   const cor = useCor();
   const [foco, setFoco] = useState(false);
+  // Campos de senha ganham o botão de mostrar/ocultar (como o Input com ícone final do SDS).
+  const [visivel, setVisivel] = useState(false);
   // Desvio do SDS: borda de repouso em border-default-secondary (4,6:1); a border-default do SDS (1,4:1) não atinge 3:1 para controles.
   const borda = isDisabled ? 'border-disabled' : errorMessage ? 'border-danger' : foco ? 'border-brand-secondary' : 'border-default-secondary';
   return (
     <Field label={label} description={description} errorMessage={errorMessage} isDisabled={isDisabled}>
-      <TextInput
-        {...props}
-        multiline={multiline}
-        editable={!isDisabled}
-        onFocus={(e) => { setFoco(true); props.onFocus?.(e); }}
-        onBlur={(e) => { setFoco(false); props.onBlur?.(e); }}
-        placeholderTextColor={cor('text-tertiary')}
-        aria-invalid={!!errorMessage}
-        className={`w-full rounded-md border px-4 py-[10px] font-sans text-body ${multiline ? 'min-h-20' : 'min-h-12'} ${isDisabled ? 'bg-disabled text-disabled' : 'bg-default text-default'} ${borda}`}
-        style={multiline ? { textAlignVertical: 'top' } : undefined}
-      />
+      <View className="justify-center">
+        <TextInput
+          {...props}
+          multiline={multiline}
+          secureTextEntry={secureTextEntry && !visivel}
+          editable={!isDisabled}
+          onFocus={(e) => { setFoco(true); props.onFocus?.(e); }}
+          onBlur={(e) => { setFoco(false); props.onBlur?.(e); }}
+          placeholderTextColor={cor('text-tertiary')}
+          aria-invalid={!!errorMessage}
+          className={`w-full rounded-md border px-4 py-[10px] font-sans text-body ${secureTextEntry ? 'pr-12' : ''} ${multiline ? 'min-h-20' : 'min-h-12'} ${isDisabled ? 'bg-disabled text-disabled' : 'bg-default text-default'} ${borda}`}
+          style={multiline ? { textAlignVertical: 'top' } : undefined}
+        />
+        {secureTextEntry ? (
+          <Pressable onPress={() => setVisivel((v) => !v)} accessibilityRole="button" accessibilityLabel={visivel ? 'Ocultar senha' : 'Mostrar senha'}
+            hitSlop={8} className="absolute right-1 h-10 w-10 items-center justify-center rounded-md active:bg-default-hover">
+            {visivel ? <EyeOff size={20} color={cor('icon-secondary')} /> : <Eye size={20} color={cor('icon-secondary')} />}
+          </Pressable>
+        ) : null}
+      </View>
     </Field>
   );
 }
@@ -279,5 +290,38 @@ export function Card({
     <Pressable onPress={onPress} accessibilityRole="button" className={`${base} active:bg-default-hover`} style={sombra}>{children}</Pressable>
   ) : (
     <View className={base} style={sombra}>{children}</View>
+  );
+}
+
+// ---------------------------------------------------------------- Tabs
+/** Tabs do SDS (tab-list + tab). Desvio: aba ativa com traço de 2px em border-brand, mais visível que o 1px cinza do SDS. */
+export function Tabs<V extends string>({ value, onChange, tabs }: { value: V; onChange: (v: V) => void; tabs: { value: V; label: string; count?: number }[] }) {
+  return (
+    <View className="flex-row border-b border-default" accessibilityRole="tablist">
+      {tabs.map((t) => {
+        const sel = t.value === value;
+        return (
+          <Pressable key={t.value} onPress={() => onChange(t.value)} accessibilityRole="tab" accessibilityState={{ selected: sel }}
+            className={`-mb-px min-h-12 flex-1 items-center justify-center rounded-t-sm px-3 ${sel ? 'border-b-2 border-brand' : 'active:bg-default-hover'}`}>
+            <RNText className={`font-sans text-body ${sel ? 'font-sans-semibold text-default' : 'text-secondary'}`} numberOfLines={1}>
+              {t.label}{t.count != null ? ` (${t.count})` : ''}
+            </RNText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------- Meter
+/** Barra de progresso com marca de meta (uso didático no painel). `valor` e `meta` em 0–100. */
+export function Meter({ valor, meta, tom = 'brand', label }: { valor: number; meta?: number | null; tom?: 'brand' | 'positive' | 'warning' | 'danger'; label: string }) {
+  const fundo = { brand: 'bg-brand', positive: 'bg-positive', warning: 'bg-warning', danger: 'bg-danger' }[tom];
+  const v = Math.max(0, Math.min(100, valor));
+  return (
+    <View accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{ min: 0, max: 100, now: Math.round(v) }} className="h-2 w-full justify-center rounded-full bg-tertiary">
+      <View className={`h-2 rounded-full ${fundo}`} style={{ width: `${v}%` }} />
+      {meta != null ? <View className="absolute h-4 w-0.5 bg-brand" style={{ left: `${Math.max(0, Math.min(100, meta))}%` }} /> : null}
+    </View>
   );
 }
