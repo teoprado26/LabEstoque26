@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
-import { Boxes, ClipboardList, Gauge, Menu } from 'lucide-react-native';
+import { ArrowLeftRight, Boxes, ClipboardList, Gauge, Menu } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { Carregando } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
@@ -29,7 +29,11 @@ export default function AppLayout() {
       <Tabs.Screen name="index" options={{ title: 'Painel', tabBarIcon: ({ color }) => <Gauge size={24} color={color} /> }} />
       <Tabs.Screen name="estoque" options={{ title: 'Estoque', tabBarIcon: ({ color }) => <Boxes size={24} color={color} /> }} />
       <Tabs.Screen name="operar" options={{ title: 'Operar', tabBarIcon: ({ color }) => <ClipboardList size={24} color={color} /> }} />
+      <Tabs.Screen name="movimentacoes" options={{ title: 'Movimentações', tabBarIcon: ({ color }) => <ArrowLeftRight size={24} color={color} /> }} />
       <Tabs.Screen name="mais" options={{ title: 'Mais', tabBarIcon: ({ color }) => <Menu size={24} color={color} /> }} />
+      <Tabs.Screen name="escanear" options={oculto} />
+      <Tabs.Screen name="compras" options={oculto} />
+      <Tabs.Screen name="analises" options={oculto} />
       <Tabs.Screen name="item/[id]" options={oculto} />
       <Tabs.Screen name="dispensar" options={oculto} />
       <Tabs.Screen name="receber" options={oculto} />

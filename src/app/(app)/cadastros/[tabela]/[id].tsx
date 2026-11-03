@@ -10,7 +10,8 @@ import { useSessao } from '@/lib/sessao';
 import { mensagemErro } from '@/lib/supabase';
 
 export default function EditarCadastro() {
-  const { tabela, id } = useLocalSearchParams<{ tabela: string; id: string }>();
+  // Ao cadastrar pela câmera, o código de barras lido chega como parâmetro e já vem preenchido.
+  const { tabela, id, codigo_barras } = useLocalSearchParams<{ tabela: string; id: string; codigo_barras?: string }>();
   const { lab, pode } = useSessao();
   const def = ehTabelaCadastro(tabela ?? '') ? CADASTROS[tabela as TabelaCadastro] : null;
   const novo = id === 'novo';
@@ -34,7 +35,7 @@ export default function EditarCadastro() {
       .then(([registro, ...listas]) => {
         if (!novo && !registro) throw new Error('Registro não encontrado.');
         setOriginal(registro as Registro | null);
-        setValores(paraValores(def, registro as Registro | null));
+        setValores({ ...paraValores(def, registro as Registro | null), ...(novo && codigo_barras && def.tabela === 'itens' ? { codigo_barras } : {}) });
         setRefs(Object.fromEntries(camposRef.map((c, i) => [c.chave, listas[i] as OpcaoRef[]])));
       })
       .catch((e) => setErro(mensagemErro(e)));

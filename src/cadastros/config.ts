@@ -101,6 +101,7 @@ export const CADASTROS: Record<TabelaCadastro, CadastroDef> = {
           { chave: 'codigo', rotulo: 'Código (SKU)', tipo: 'texto', obrigatorio: true, maiusculas: true },
           { chave: 'nome', rotulo: 'Nome', tipo: 'texto', obrigatorio: true },
           { chave: 'tipo', rotulo: 'Tipo', tipo: 'opcao', obrigatorio: true, opcoes: TIPOS_ITEM },
+          { chave: 'codigo_barras', rotulo: 'Código de barras (EAN/GTIN)', tipo: 'texto', ajuda: 'Lido pela câmera em Escanear; permite cadastrar, receber e retirar sem digitar.' },
           { chave: 'categoria_id', rotulo: 'Categoria', tipo: 'ref', tabela: 'categorias' },
           {
             chave: 'criticidade', rotulo: 'Criticidade', tipo: 'opcao', obrigatorio: true,

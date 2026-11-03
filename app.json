@@ -35,7 +35,8 @@
           "recordAudioAndroid": false
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sharing"
     ],
     "scheme": "labestoque"
   }

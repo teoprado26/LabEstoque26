@@ -2,7 +2,10 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { LeitorCodigo } from '@/components/LeitorCodigo';
 import { qrDoLote } from '@/components/LeitorQR';
+import { resolverCodigo } from '@/data/codigos';
+import { ScanLine } from 'lucide-react-native';
 import { Aviso, Botao, Campo, Card, Opcoes, Selo, Tela, T } from '@/components/ui';
 import { lerData, lerNumero, listarItens, listarLocais, type ItemResumo, type Opcao } from '@/data/cadastros';
 import { fmtNumero } from '@/domain/formato';
@@ -10,7 +13,8 @@ import { useSessao } from '@/lib/sessao';
 import { mensagemErro, supabase } from '@/lib/supabase';
 
 export default function Receber() {
-  const params = useLocalSearchParams<{ item?: string }>();
+  // Vindo de um pedido de compra: item, linha do pedido e quantidade que falta já preenchidos.
+  const params = useLocalSearchParams<{ item?: string; pedidoLinha?: string; qtd?: string }>();
   const { lab, pode } = useSessao();
   const [itens, setItens] = useState<ItemResumo[]>([]);
   const [locais, setLocais] = useState<Opcao[]>([]);
@@ -18,7 +22,8 @@ export default function Receber() {
   const [busca, setBusca] = useState('');
   const [numero, setNumero] = useState('');
   const [validade, setValidade] = useState('');
-  const [qtd, setQtd] = useState('');
+  const [qtd, setQtd] = useState(params.qtd ?? '');
+  const [lendo, setLendo] = useState(false);
   const [custo, setCusto] = useState('');
   const [local, setLocal] = useState<string | null>(null);
   const [temp, setTemp] = useState('');
@@ -39,13 +44,27 @@ export default function Receber() {
   const quantidade = lerNumero(qtd);
   const dataValidade = validade ? lerData(validade) : null;
 
+  async function aoLerCodigo(codigo: string) {
+    if (!lab) return;
+    setErro(null);
+    const r = await resolverCodigo(lab.id, codigo);
+    if (r.tipo === 'desconhecido') {
+      setLendo(false);
+      if (pode('gestor')) router.push({ pathname: '/cadastros/[tabela]/[id]', params: { tabela: 'itens', id: 'novo', codigo_barras: r.codigo } });
+      else setErro(`Nenhum item com o código ${r.codigo}. Peça a um gestor para cadastrá-lo.`);
+      return;
+    }
+    setLendo(false);
+    setItemId(r.itemId);
+  }
+
   async function confirmar() {
     if (!item || !quantidade || !local) return;
     setEnviando(true);
     setErro(null);
     const { data, error } = await supabase.rpc('fn_receber', {
       p_item: item.id, p_numero: numero.trim(), p_validade: dataValidade, p_qtd_compra: quantidade, p_local: local,
-      p_custo_unitario_compra: lerNumero(custo), p_temp_chegada: lerNumero(temp),
+      p_custo_unitario_compra: lerNumero(custo), p_temp_chegada: lerNumero(temp), p_pedido_linha: params.pedidoLinha ?? null,
     });
     setEnviando(false);
     if (error) return setErro(mensagemErro(error));
@@ -60,6 +79,7 @@ export default function Receber() {
   return (
     <Tela titulo="Receber" voltar>
       {erro ? <Aviso>{erro}</Aviso> : null}
+      {params.pedidoLinha && !recebido ? <Aviso tom="warn">Recebendo um pedido de compra: a quantidade entra na linha do pedido e o lote fica vinculado a ele.</Aviso> : null}
       {recebido ? (
         <Card className="items-center gap-3">
           <Selo tom="warn" texto="QUARENTENA · aguardando conferência" />
@@ -71,9 +91,16 @@ export default function Receber() {
           </View>
           <T v="caption">Etiqueta do lote. Imprima e cole na embalagem; o gestor libera o lote após a conferência.</T>
           <Botao tipo="secundario" titulo="Receber outro lote" onPress={() => setRecebido(null)} />
+          {params.pedidoLinha ? <Botao tipo="sutil" titulo="Voltar para o pedido" onPress={() => router.back()} /> : null}
         </Card>
       ) : !item ? (
         <View className="gap-2">
+          {lendo ? (
+            <View className="gap-2">
+              <LeitorCodigo onCodigo={aoLerCodigo} />
+              <Botao tipo="sutil" titulo="Fechar leitor" onPress={() => setLendo(false)} />
+            </View>
+          ) : <Botao tipo="secundario" titulo="Ler código de barras do produto" icone={ScanLine} onPress={() => setLendo(true)} />}
           <Campo rotulo="Item" placeholder="Busque por nome ou código" value={busca} onChangeText={setBusca} />
           {itens
             .filter((i) => !busca || `${i.nome} ${i.codigo}`.toLowerCase().includes(busca.toLowerCase()))

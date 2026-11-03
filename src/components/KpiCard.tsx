@@ -11,7 +11,10 @@ export function formatarValor(id: string, valor: number): string {
   const u = KPI_POR_ID[id].unidade;
   if (u === '%') return fmtPct(valor);
   if (u === 'R$') return fmtMoeda(valor);
-  if (u === 'dias') return `${fmtNumero(valor)} dias`;
+  if (u === 'dias') return `${fmtNumero(valor, valor < 10 ? 1 : 0)} dias`;
+  if (u === 'h') return `${fmtNumero(valor, valor < 10 ? 1 : 0)} h`;
+  if (u === 'giro') return `${fmtNumero(valor, 1)}× ao ano`;
+  if (u === 'itens') return `${fmtNumero(valor)} ${valor === 1 ? 'item' : 'itens'}`;
   return fmtNumero(valor);
 }
 

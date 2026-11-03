@@ -2,7 +2,7 @@
 // O painel usa este serviço; o PDF e o Excel (Fase 2) vão usar o mesmo, com os mesmos filtros.
 import { supabase } from '@/lib/supabase';
 import { diasEntre, hoje, somarDias } from '@/domain/datas';
-import { calcularReposicao, type ParametrosReposicao } from '@/domain/reposicao';
+import { calcularReposicao, escolherLeadTime, type LeadTime, type ParametrosReposicao } from '@/domain/reposicao';
 import type { Criticidade, LoteStatus, MovTipo, PosicaoLote } from '@/domain/tipos';
 import {
   k01Disponibilidade, k02AtendimentoLinhas, k03AtendimentoQuantidade, k04Ruptura, k07Cobertura, k09AbaixoDoPR,
@@ -47,6 +47,13 @@ export interface ItemEstoque {
   cobertura: KpiResultado;
   reposicao: ParametrosReposicao;
   posicoes: PosicaoLote[];
+  categoriaId: string | null;
+  tipo: string;
+  fator: number;
+  unidadeCompra: string;
+  codigoBarras: string | null;
+  emPedido: number;
+  leadTime: LeadTime | null;
 }
 
 export async function carregarEstoque(labId: string): Promise<ItemEstoque[]> {
@@ -54,15 +61,19 @@ export async function carregarEstoque(labId: string): Promise<ItemEstoque[]> {
   const { data: param } = await supabase.from('parametros_lab').select('*').eq('lab_id', labId).maybeSingle();
   const janela: number = param?.janela_consumo_dias ?? 90;
 
-  const [pos, itens, disp, cons, serie, snaps] = await Promise.all([
+  const [pos, itens, disp, cons, serie, snaps, lts] = await Promise.all([
     supabase.from('v_posicao_item').select('*').eq('lab_id', labId),
-    supabase.from('itens').select('id, multiplo_embalagem, validade_tipica_dias, validade_pos_abertura_dias, lead_time_manual_dias, es_manual, pr_manual, justificativa_manual').eq('lab_id', labId),
+    supabase.from('itens').select('id, categoria_id, tipo, fator_conversao, unidade_compra, codigo_barras, multiplo_embalagem, validade_tipica_dias, validade_pos_abertura_dias, lead_time_manual_dias, es_manual, pr_manual, justificativa_manual').eq('lab_id', labId),
     supabase.from('v_disponivel').select('*').eq('lab_id', labId),
     supabase.rpc('fn_consumo_itens', { p_lab: labId, p_janela_dias: janela }),
     supabase.from('v_consumo_diario').select('item_id, dia, consumo').eq('lab_id', labId).gt('dia', somarDias(dia, -janela)),
     supabase.from('snapshot_itens').select('item_id, dia, disponivel').eq('lab_id', labId).gt('dia', somarDias(dia, -janela)),
+    supabase.rpc('fn_lead_times', { p_lab: labId }),
   ]);
-  [pos, itens, disp, cons, serie, snaps].forEach((r) => falhou(r.error));
+  [pos, itens, disp, cons, serie, snaps, lts].forEach((r) => falhou(r.error));
+  // Lead time real por item (pedidos recebidos); com menos de 3 pedidos, cai no manual do cadastro.
+  const leadTimes = new Map<string, number[]>();
+  for (const l of (lts.data ?? []) as { item_id: string; dias: number }[]) leadTimes.set(l.item_id, [...(leadTimes.get(l.item_id) ?? []), Number(l.dias)]);
 
   const cadastro = new Map((itens.data ?? []).map((i) => [i.id as string, i]));
   const consumo = new Map((cons.data ?? []).map((c: { item_id: string }) => [c.item_id, c]));
@@ -93,6 +104,7 @@ export async function carregarEstoque(labId: string): Promise<ItemEstoque[]> {
       itemId: p.item_id, posicoes, consumoMedioDiario: consumoMedio,
       diasHistorico: Number(c?.dias_historico ?? 0), saidasNaJanela: Number(c?.saidas ?? 0),
     };
+    const leadTime = escolherLeadTime(leadTimes.get(p.item_id) ?? [], null, cad?.lead_time_manual_dias != null ? Number(cad.lead_time_manual_dias) : null);
     const reposicao = calcularReposicao({
       serie: {
         consumoPorDia: diasJanela.map((d) => consumoDia.get(`${p.item_id}|${d}`) ?? 0),
@@ -100,8 +112,7 @@ export async function carregarEstoque(labId: string): Promise<ItemEstoque[]> {
         saidas: dados.saidasNaJanela,
         diasHistorico: dados.diasHistorico,
       },
-      // Fase 1 não tem compras: usa o lead time manual. Fase 2 passa a usar os pedidos.
-      leadTime: cad?.lead_time_manual_dias != null ? { media: Number(cad.lead_time_manual_dias), desvio: 0, origem: 'manual' } : null,
+      leadTime,
       criticidade: p.criticidade,
       nivelServico: param?.nivel_servico?.[p.criticidade],
       periodoRevisaoDias: param?.periodo_revisao_dias ?? 30,
@@ -117,6 +128,8 @@ export async function carregarEstoque(labId: string): Promise<ItemEstoque[]> {
       fisico: Number(p.fisico), disponivel: Number(p.disponivel), posicaoProjetada: Number(p.posicao_projetada),
       custoMedio: p.custo_medio == null ? null : Number(p.custo_medio), proximaValidade: p.proxima_validade,
       cobertura: k07Cobertura(dados, dia, param?.min_dias_historico ?? 60), reposicao, posicoes,
+      categoriaId: cad?.categoria_id ?? null, tipo: cad?.tipo ?? 'outro', fator: Number(cad?.fator_conversao ?? 1), unidadeCompra: cad?.unidade_compra ?? '',
+      codigoBarras: cad?.codigo_barras ?? null, emPedido: Number(p.em_pedido ?? 0), leadTime,
     };
   });
 }

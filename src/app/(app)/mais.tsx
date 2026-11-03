@@ -10,6 +10,7 @@ const NOMES: Record<string, string> = {
 };
 
 const ATALHOS: { titulo: string; descricao: string; rota: Href; perfis?: Perfil[] }[] = [
+  { titulo: 'Análises', descricao: 'Indicadores completos, ABC-VED, Pareto, vencimentos, fornecedores, consumo e itens parados.', rota: '/analises' },
   { titulo: 'Cadastros', descricao: 'Itens, locais, equipamentos, projetos, fornecedores e categorias.', rota: '/cadastros' },
   { titulo: 'Membros', descricao: 'Quem tem acesso ao laboratório e com qual perfil.', rota: '/membros' },
 ];

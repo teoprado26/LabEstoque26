@@ -1,8 +1,9 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ScanLine } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { LeitorQR } from '@/components/LeitorQR';
+import { LeitorCodigo } from '@/components/LeitorCodigo';
+import { resolverCodigo } from '@/data/codigos';
 import { Aviso, Botao, Campo, Card, Opcoes, Selo, SeloLote, Tela, T } from '@/components/ui';
 import { listarLocais, listarProjetos, lerNumero, type Opcao } from '@/data/cadastros';
 import { carregarEstoque, type ItemEstoque } from '@/data/servicoKpis';
@@ -64,6 +65,28 @@ export default function Dispensar() {
     if (!p) setErro('Lote lido não está disponível (quarentena, bloqueado, vencido ou em local não conforme).');
   }
 
+  // Lote vindo do Escanear ou da etiqueta: seleciona assim que o estoque carregar.
+  const loteInicial = useRef(params.lote ?? null);
+  useEffect(() => {
+    if (loteInicial.current && estoque.length) {
+      lerLote(loteInicial.current);
+      loteInicial.current = null;
+    }
+  }, [estoque]);
+
+  async function aoLerCodigo(codigo: string) {
+    if (!lab) return;
+    setErro(null);
+    setSucesso(null);
+    const r = await resolverCodigo(lab.id, codigo);
+    if (r.tipo === 'lote') return lerLote(r.loteId);
+    setLendo(false);
+    if (r.tipo === 'item') {
+      setItemId(r.itemId);
+      setPosicao(null);
+    } else setErro(`Nenhum item com o código ${r.codigo}. Cadastre-o em Escanear → Cadastrar.`);
+  }
+
   async function confirmar() {
     if (!escolhida || !quantidade || !projeto) return;
     setEnviando(true);
@@ -90,9 +113,9 @@ export default function Dispensar() {
       {erro ? <Aviso>{erro}</Aviso> : null}
 
       {lendo ? (
-        <LeitorQR onLote={lerLote} onCancelar={() => setLendo(false)} />
+        <View className="gap-2"><LeitorCodigo onCodigo={aoLerCodigo} /><Botao tipo="sutil" titulo="Fechar leitor" onPress={() => setLendo(false)} /></View>
       ) : (
-        <Botao tipo="secundario" titulo="Ler QR do lote" icone={ScanLine} onPress={() => { setErro(null); setSucesso(null); setLendo(true); }} />
+        <Botao tipo="secundario" titulo="Ler código do produto ou do lote" icone={ScanLine} onPress={() => { setErro(null); setSucesso(null); setLendo(true); }} />
       )}
 
       {!item ? (
