@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { ArrowLeftRight, ClipboardCheck, PackageMinus, PackagePlus, TriangleAlert, Undo2, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeftRight, ClipboardCheck, PackageMinus, PackagePlus, TriangleAlert, Undo2, Wrench, type LucideIcon } from 'lucide-react-native';
 import { View } from 'react-native';
 import { Card, Selo, Tela, T } from '@/components/ui';
 import { useSessao, type Perfil } from '@/lib/sessao';
@@ -11,6 +11,7 @@ const OPERACOES: { titulo: string; descricao: string; Icone: LucideIcon; rota?: 
   { titulo: 'Transferir', descricao: 'Mudança de local, com checagem de compatibilidade.', Icone: ArrowLeftRight, perfis: ['tecnico', 'gestor'] },
   { titulo: 'Registrar perda', descricao: 'Baixa com motivo padronizado.', Icone: TriangleAlert, perfis: ['tecnico', 'gestor'] },
   { titulo: 'Inventário', descricao: 'Contagem às cegas e aprovação de ajustes.', Icone: ClipboardCheck, perfis: ['tecnico', 'gestor'] },
+  { titulo: 'Equipamentos', descricao: 'Agenda de manutenção e calibração, registro de serviços e situação.', Icone: Wrench, rota: '/equipamentos', perfis: ['solicitante', 'tecnico', 'gestor', 'coordenador', 'auditor'] },
 ];
 
 export default function Operar() {

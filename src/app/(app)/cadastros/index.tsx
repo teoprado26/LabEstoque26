@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
-import { Boxes, FolderKanban, MapPin, Tags, Truck, type LucideIcon } from 'lucide-react-native';
+import { Boxes, FolderKanban, MapPin, Tags, Truck, Wrench, type LucideIcon } from 'lucide-react-native';
 import { View } from 'react-native';
 import { CADASTROS, ORDEM_CADASTROS, type TabelaCadastro } from '@/cadastros/config';
 import { Card, Selo, Tela, T } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 
-const ICONES: Record<TabelaCadastro, LucideIcon> = { itens: Boxes, locais: MapPin, projetos: FolderKanban, fornecedores: Truck, categorias: Tags };
+const ICONES: Record<TabelaCadastro, LucideIcon> = { itens: Boxes, locais: MapPin, equipamentos: Wrench, projetos: FolderKanban, fornecedores: Truck, categorias: Tags };
 
 export default function Cadastros() {
   const { pode } = useSessao();

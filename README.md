@@ -12,12 +12,13 @@ Expo SDK 58 + Expo Router + NativeWind 4 · Supabase (Postgres, Auth, RLS) · An
 
 ## Como rodar
 
-1. Crie um projeto em [supabase.com](https://supabase.com) (plano gratuito serve).
-2. No painel do Supabase, abra **SQL Editor** e rode, em ordem, os arquivos de [`supabase/migrations/`](supabase/migrations/).
-   Com a Supabase CLI: `npx supabase link` e `npx supabase db push`.
+1. Projeto Supabase: `mqhekzdgvqvvlqnzsija`.
+2. Aplique as migrações de [`supabase/migrations/`](supabase/migrations/):
+   `npx supabase login`, depois `npx supabase link --project-ref mqhekzdgvqvvlqnzsija` (pede a senha do banco) e `npx supabase db push`.
+   Sem a CLI: rode os arquivos, em ordem, no **SQL Editor** do painel.
 3. Opcional: em **Database → Extensions**, habilite `pg_cron` e rode
    `select cron.schedule('job-diario', '30 3 * * *', $$ select fn_job_diario() $$);` (vencimento automático e snapshot diário às 00:30 de Brasília).
-4. Copie `.env.example` para `.env.local` e preencha `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Project Settings → API).
+4. Em `.env.local` (já criado com a URL do projeto), preencha `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Project Settings → API Keys).
 5. `npm install` e `npx expo start`. Abra no celular pelo Expo Go (QR no terminal), ou aperte `w` para a versão web.
 6. Crie a conta, crie o laboratório e, na aba **Mais**, carregue os dados de demonstração.
 

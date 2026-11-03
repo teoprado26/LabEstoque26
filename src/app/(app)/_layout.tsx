@@ -34,6 +34,7 @@ export default function AppLayout() {
       <Tabs.Screen name="dispensar" options={oculto} />
       <Tabs.Screen name="receber" options={oculto} />
       <Tabs.Screen name="cadastros" options={oculto} />
+      <Tabs.Screen name="equipamentos" options={oculto} />
     </Tabs>
   );
 }

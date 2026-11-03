@@ -17,7 +17,8 @@ export default function Mais() {
   async function carregarDemo() {
     if (!lab) return;
     setCarregando(true);
-    const { error } = await supabase.rpc('fn_carregar_demonstracao', { p_lab: lab.id });
+    let { error } = await supabase.rpc('fn_carregar_demonstracao', { p_lab: lab.id });
+    if (!error) ({ error } = await supabase.rpc('fn_demo_equipamentos', { p_lab: lab.id }));
     setCarregando(false);
     setMsg(error ? { tom: 'crit', texto: mensagemErro(error) } : { tom: 'ok', texto: 'Dados de demonstração carregados. Abra o Painel.' });
   }
@@ -40,7 +41,7 @@ export default function Mais() {
       {pode() ? (
         <Card className="gap-2">
           <T v="label">Demonstração</T>
-          <T v="caption">Cria itens, locais, projetos, lotes e 120 dias de movimentações fictícias neste laboratório, para testar o painel.</T>
+          <T v="caption">Cria itens, locais, projetos, lotes, equipamentos com agenda de manutenção e calibração, e 120 dias de movimentações fictícias neste laboratório, para testar o painel.</T>
           <Botao tipo="secundario" titulo="Carregar dados de demonstração" onPress={carregarDemo} carregando={carregando} />
         </Card>
       ) : null}

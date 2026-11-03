@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { ordenarArvore, type NoLocal } from '@/cadastros/arvoreLocais';
-import { CADASTROS, NIVEIS_LOCAL, TIPOS_ITEM, ehTabelaCadastro, type Registro, type TabelaCadastro } from '@/cadastros/config';
+import { CADASTROS, NIVEIS_LOCAL, TIPOS_EQUIPAMENTO, TIPOS_ITEM, ehTabelaCadastro, type Registro, type TabelaCadastro } from '@/cadastros/config';
 import { Aviso, Campo, Card, Carregando, Interruptor, Selo, Tela, T } from '@/components/ui';
 import { listarRegistros } from '@/data/repositorioCadastros';
 import { fmtNumero } from '@/domain/formato';
@@ -30,6 +30,10 @@ function Linha({ tabela, r, recuo = 0 }: { tabela: TabelaCadastro; r: Registro; 
     const faixa = r.temp_min != null ? ` · ${fmtNumero(Number(r.temp_min))} a ${fmtNumero(Number(r.temp_max))} °C` : '';
     sub = `${rotuloDe(NIVEIS_LOCAL, r.nivel)}${faixa}`;
     if (r.conforme === false) selos.push({ tom: 'crit', texto: '✕ Não conforme' });
+  } else if (tabela === 'equipamentos') {
+    sub = [r.codigo, rotuloDe(TIPOS_EQUIPAMENTO, r.tipo), r.modelo].filter(Boolean).join(' · ');
+    if (r.exige_calibracao) selos.push({ tom: 'neutro', texto: `Calibração a cada ${r.periodicidade_calibracao_dias} dias` });
+    if (r.periodicidade_manutencao_dias != null) selos.push({ tom: 'neutro', texto: `Preventiva a cada ${r.periodicidade_manutencao_dias} dias` });
   } else if (tabela === 'projetos') {
     titulo = `${r.codigo} · ${r.nome}`;
     sub = (r.fonte_recurso as string) ?? null;

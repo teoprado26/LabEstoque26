@@ -96,3 +96,20 @@ describe('árvore de locais', () => {
     expect(paisPossiveis(L, 'equipamento', 'sala').map((l) => l.id)).toEqual(['lab']);
   });
 });
+
+describe('equipamentos', () => {
+  it('exige periodicidade quando exige calibração', async () => {
+    const def = CADASTROS.equipamentos;
+    const v = { ...paraValores(def, null), codigo: 'pat-1', nome: 'Balança', tipo: 'balanca', exige_calibracao: true };
+    expect(paraRegistro(def, v).erros).toHaveProperty('periodicidade_calibracao_dias');
+    expect(paraRegistro(def, { ...v, periodicidade_calibracao_dias: '365' }).erros).toEqual({});
+  });
+  it('ordena por urgência: reprovada e vencida antes de em dia', async () => {
+    const { ordenarPorUrgencia } = await import('../../domain/equipamentos');
+    const r = ordenarPorUrgencia([
+      { nome: 'B', situacao: 'ok' }, { nome: 'A', situacao: 'calibracao_vencida' },
+      { nome: 'C', situacao: 'calibracao_reprovada' }, { nome: 'D', situacao: 'em_manutencao' },
+    ]);
+    expect(r.map((x) => x.nome)).toEqual(['C', 'A', 'D', 'B']);
+  });
+});

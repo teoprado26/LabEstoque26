@@ -19,6 +19,7 @@ O catálogo de KPIs (item 3) está em [`src/kpis/catalog.ts`](../src/kpis/catalo
 | 1.11 | Painel com os KPIs da Fase 1, selos de qualidade do dado e metodologia | feito |
 | 1.12 | Alertas de reposição e de vencimento | feito (no painel) |
 | 1.13 | Gestão de usuários e perfis por laboratório | próximo |
+| 1.14 | Equipamentos: cadastro, agenda e registro de manutenção (preventiva/corretiva) e calibração, situação única (`v_equipamentos_situacao`) com alertas no painel | feito (incluído a pedido) |
 
 **Critérios de aceite da Fase 1:** saldo = Σ movimentações e nenhuma tela edita saldo; lote devolvido não aparece como disponível até liberação; reserva planejada não conta como ruptura; denominador zero mostra "Dados insuficientes"; cobertura, PR e índice de perdas batem com os valores esperados na base de testes.
 

@@ -3,6 +3,9 @@ import { RefreshCw } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { KpiCard } from '@/components/KpiCard';
+import { SeloSituacao } from '@/components/SeloSituacao';
+import { listarSituacao, type EquipamentoSituacao } from '@/data/equipamentos';
+import { SITUACOES, ordenarPorUrgencia, situacaoValida } from '@/domain/equipamentos';
 import { Aviso, Card, Carregando, Opcoes, Selo, Tela, T } from '@/components/ui';
 import { carregarPainel, ultimosDias, type Painel } from '@/data/servicoKpis';
 import { diasEntre, hoje } from '@/domain/datas';
@@ -20,6 +23,7 @@ export default function PainelTela() {
   const { lab } = useSessao();
   const [dias, setDias] = useState<'30' | '90' | '180'>('30');
   const [painel, setPainel] = useState<Painel | null>(null);
+  const [equipamentos, setEquipamentos] = useState<EquipamentoSituacao[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
 
@@ -28,7 +32,9 @@ export default function PainelTela() {
     setCarregando(true);
     setErro(null);
     try {
-      setPainel(await carregarPainel(lab.id, ultimosDias(Number(dias))));
+      const [p, eqs] = await Promise.all([carregarPainel(lab.id, ultimosDias(Number(dias))), listarSituacao(lab.id)]);
+      setPainel(p);
+      setEquipamentos(ordenarPorUrgencia(eqs.filter((e) => situacaoValida(e.situacao) && SITUACOES[e.situacao].atencao)));
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -89,7 +95,18 @@ export default function PainelTela() {
           <KpiCard r={a.K14} anterior={ant.K14} />
 
           <T v="title">Alertas</T>
-          {abaixoPR.length === 0 && vencendo.length === 0 ? <T v="caption">Nenhum alerta de reposição ou vencimento.</T> : null}
+          {abaixoPR.length === 0 && vencendo.length === 0 && equipamentos.length === 0 ? <T v="caption">Nenhum alerta de reposição, vencimento ou equipamento.</T> : null}
+          {equipamentos.map((e) => (
+            <Card key={e.equipamento_id} onPress={() => router.push(`/equipamentos/${e.equipamento_id}`)} className="gap-1">
+              <SeloSituacao situacao={e.situacao} />
+              <T v="subtitle">{e.nome}</T>
+              <T v="caption">
+                {e.exige_calibracao ? `Calibração válida até ${fmtData(e.calibracao_valida_ate)}` : ''}
+                {e.exige_calibracao && e.periodicidade_manutencao_dias ? ' · ' : ''}
+                {e.periodicidade_manutencao_dias ? `preventiva prevista ${fmtData(e.manutencao_prevista)}` : ''}
+              </T>
+            </Card>
+          ))}
           {abaixoPR.map((i) => (
             <Card key={i.itemId} onPress={() => router.push(`/item/${i.itemId}`)} className="gap-1">
               <View className="flex-row items-center gap-2">

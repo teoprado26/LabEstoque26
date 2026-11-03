@@ -1,7 +1,7 @@
 // Definição declarativa dos cadastros: campos, seções, validações e como cada registro aparece na lista.
 // A tela genérica de formulário e a lista leem só daqui.
 
-export type TabelaCadastro = 'itens' | 'locais' | 'projetos' | 'fornecedores' | 'categorias';
+export type TabelaCadastro = 'itens' | 'locais' | 'equipamentos' | 'projetos' | 'fornecedores' | 'categorias';
 export type TabelaRef = 'categorias' | 'locais' | 'fornecedores';
 
 interface Base {
@@ -57,6 +57,24 @@ export const NIVEIS_LOCAL = [
   { valor: 'prateleira', rotulo: 'Prateleira / rack' },
   { valor: 'caixa', rotulo: 'Caixa' },
   { valor: 'posicao', rotulo: 'Posição' },
+];
+
+export const TIPOS_EQUIPAMENTO = [
+  { valor: 'balanca', rotulo: 'Balança' },
+  { valor: 'pipeta', rotulo: 'Pipeta' },
+  { valor: 'centrifuga', rotulo: 'Centrífuga' },
+  { valor: 'freezer', rotulo: 'Freezer' },
+  { valor: 'ultrafreezer', rotulo: 'Ultrafreezer' },
+  { valor: 'geladeira', rotulo: 'Geladeira' },
+  { valor: 'estufa_co2', rotulo: 'Estufa de CO₂' },
+  { valor: 'cabine_biosseguranca', rotulo: 'Cabine de biossegurança' },
+  { valor: 'autoclave', rotulo: 'Autoclave' },
+  { valor: 'microscopio', rotulo: 'Microscópio' },
+  { valor: 'phmetro', rotulo: 'pHmetro' },
+  { valor: 'banho_maria', rotulo: 'Banho-maria' },
+  { valor: 'termometro', rotulo: 'Termômetro' },
+  { valor: 'espectrofotometro', rotulo: 'Espectrofotômetro' },
+  { valor: 'outro', rotulo: 'Outro' },
 ];
 
 const faixaTemperatura = (r: Registro, erros: Record<string, string>) => {
@@ -189,6 +207,58 @@ export const CADASTROS: Record<TabelaCadastro, CadastroDef> = {
     },
   },
 
+  equipamentos: {
+    tabela: 'equipamentos',
+    titulo: 'Equipamentos',
+    singular: 'equipamento',
+    descricao: 'Balanças, pipetas, centrífugas, freezers e demais equipamentos com manutenção ou calibração.',
+    ordem: 'nome',
+    padrao: { criticidade: 'E', exige_calibracao: false, antecedencia_alerta_dias: 30, ativo: true },
+    secoes: [
+      {
+        titulo: 'Identificação',
+        campos: [
+          { chave: 'codigo', rotulo: 'Patrimônio / código', tipo: 'texto', obrigatorio: true, maiusculas: true },
+          { chave: 'nome', rotulo: 'Nome', tipo: 'texto', obrigatorio: true, ajuda: 'Ex.: Balança analítica 0,1 mg.' },
+          { chave: 'tipo', rotulo: 'Tipo', tipo: 'opcao', obrigatorio: true, opcoes: TIPOS_EQUIPAMENTO },
+          { chave: 'fabricante', rotulo: 'Fabricante', tipo: 'texto' },
+          { chave: 'modelo', rotulo: 'Modelo', tipo: 'texto' },
+          { chave: 'numero_serie', rotulo: 'Número de série', tipo: 'texto' },
+          {
+            chave: 'criticidade', rotulo: 'Criticidade', tipo: 'opcao', obrigatorio: true,
+            opcoes: [{ valor: 'V', rotulo: 'Vital' }, { valor: 'E', rotulo: 'Essencial' }, { valor: 'D', rotulo: 'Desejável' }],
+          },
+        ],
+      },
+      {
+        titulo: 'Localização e responsáveis',
+        campos: [
+          { chave: 'local_id', rotulo: 'Local', tipo: 'ref', tabela: 'locais', ajuda: 'Para freezers e geladeiras, escolha o próprio local de armazenamento.' },
+          { chave: 'responsavel_id', rotulo: 'Responsável', tipo: 'usuario' },
+          { chave: 'fornecedor_assistencia_id', rotulo: 'Assistência técnica', tipo: 'ref', tabela: 'fornecedores' },
+        ],
+      },
+      {
+        titulo: 'Calibração e manutenção',
+        campos: [
+          { chave: 'exige_calibracao', rotulo: 'Exige calibração', tipo: 'bool' },
+          { chave: 'periodicidade_calibracao_dias', rotulo: 'Calibrar a cada (dias)', tipo: 'numero', inteiro: true, positivo: true, ajuda: 'Também define a validade padrão de cada calibração.' },
+          { chave: 'periodicidade_manutencao_dias', rotulo: 'Manutenção preventiva a cada (dias)', tipo: 'numero', inteiro: true, positivo: true, ajuda: 'Vazio = sem plano de preventiva.' },
+          { chave: 'antecedencia_alerta_dias', rotulo: 'Avisar com antecedência de (dias)', tipo: 'numero', inteiro: true },
+          { chave: 'faixa_uso', rotulo: 'Faixa de uso / tolerância', tipo: 'texto', ajuda: 'Ex.: 0,1 mg a 220 g; ±0,2 mg.' },
+          { chave: 'observacao', rotulo: 'Observações', tipo: 'texto', multilinha: true },
+        ],
+      },
+      { titulo: 'Situação', campos: [ativo] },
+    ],
+    validar: (r): Record<string, string> => {
+      const e: Record<string, string> = {};
+      if (r.exige_calibracao && r.periodicidade_calibracao_dias == null) e.periodicidade_calibracao_dias = 'Obrigatória quando o equipamento exige calibração.';
+      if (r.antecedencia_alerta_dias != null && (r.antecedencia_alerta_dias as number) < 0) e.antecedencia_alerta_dias = 'Não pode ser negativa.';
+      return e;
+    },
+  },
+
   projetos: {
     tabela: 'projetos',
     titulo: 'Projetos e fontes de recurso',
@@ -248,6 +318,6 @@ export const CADASTROS: Record<TabelaCadastro, CadastroDef> = {
   },
 };
 
-export const ORDEM_CADASTROS: TabelaCadastro[] = ['itens', 'locais', 'projetos', 'fornecedores', 'categorias'];
+export const ORDEM_CADASTROS: TabelaCadastro[] = ['itens', 'locais', 'equipamentos', 'projetos', 'fornecedores', 'categorias'];
 
 export const ehTabelaCadastro = (t: string): t is TabelaCadastro => t in CADASTROS;

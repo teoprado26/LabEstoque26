@@ -159,3 +159,46 @@ await expectErr('sem ciclo na hierarquia', `update locais set pai_id = $1, nivel
 await expectErr('lab de cadastro não muda', `update itens set lab_id = $1 where id = $2`, [labB, item], 'outro laboratório');
 await expectErr('coordenador precisa ser membro', `update projetos set coordenador_id = gen_random_uuid() where id = $1`, [proj], 'membro');
 console.log(process.exitCode ? '\nHÁ FALHAS' : '\nIntegridade dos cadastros verificada.');
+
+// Equipamentos: manutenção e calibração
+const { id: bal } = await one(`insert into equipamentos (lab_id, codigo, nome, tipo, exige_calibracao, periodicidade_calibracao_dias, periodicidade_manutencao_dias, local_id)
+  values ($1, 'PAT-001', 'Balança analítica', 'balanca', true, 365, 180, $2) returning id`, [lab, sala101]);
+const sit = async () => (await one(`select situacao from v_equipamentos_situacao where equipamento_id = $1`, [bal])).situacao;
+await expectErr('exige calibração sem periodicidade', `insert into equipamentos (lab_id, codigo, nome, tipo, exige_calibracao) values ($1, 'X', 'X', 'pipeta', true)`, [lab], 'periodicidade');
+await expectErr('local de outro laboratório', `update equipamentos set local_id = (select id from locais where lab_id = $1 limit 1) where id = $2`, [labDemo, bal], 'outro laboratório');
+check('sem calibração registrada', await sit(), 'sem_calibracao');
+await expectErr('não agenda no passado', `select fn_agendar_servico($1, 'calibracao', current_date - 1)`, [bal], 'passado');
+const { id: agCal } = await one(`select fn_agendar_servico($1, 'calibracao', current_date + 7, 'Lab. Cal RBC') as id`, [bal]);
+check('agenda aparece na situação', (await one(`select calibracao_agendada is not null a from v_equipamentos_situacao where equipamento_id = $1`, [bal])).a, true);
+await expectErr('calibração exige resultado', `select fn_concluir_servico($1, current_date)`, [agCal], 'resultado');
+await db.query(`select fn_concluir_servico($1, current_date - 400, null, null, null, 850, 'aprovado', 'CERT-123')`, [agCal]);
+check('validade padrão = realização + periodicidade → vencida', await sit(), 'calibracao_vencida');
+await expectErr('serviço concluído é imutável', `update servicos_equipamento set custo = 1 where id = $1`, [agCal], 'encerrado');
+await db.query(`select fn_concluir_servico(null, current_date - 340, null, null, null, null, 'aprovado', 'CERT-124', null, null, null, $1, 'calibracao')`, [bal]);
+check('calibração vence em 25 dias → a vencer', await sit(), 'calibracao_a_vencer');
+await db.query(`select fn_concluir_servico(null, current_date, null, null, null, null, 'reprovado', 'CERT-125', null, current_date + 365, null, $1, 'calibracao')`, [bal]);
+check('última calibração reprovada', await sit(), 'calibracao_reprovada');
+await db.query(`select fn_concluir_servico(null, current_date, null, null, null, null, 'aprovado', 'CERT-126', null, current_date + 365, null, $1, 'calibracao')`, [bal]);
+check('sem preventiva registrada', await sit(), 'sem_manutencao');
+await db.query(`select fn_concluir_servico(null, current_date - 200, 'limpeza e ajuste', null, null, null, null, null, null, null, null, $1, 'manutencao_preventiva')`, [bal]);
+check('preventiva vencida há 20 dias → atrasada', await sit(), 'manutencao_atrasada');
+await expectErr('resultado só em calibração', `select fn_concluir_servico(null, current_date, null, null, null, null, 'aprovado', null, null, null, null, $1, 'manutencao_preventiva')`, [bal], 'só se aplicam');
+const { id: corr } = await one(`select fn_iniciar_manutencao($1, 'display apagado') as id`, [bal]);
+check('corretiva em andamento → em manutenção', await sit(), 'em_manutencao');
+await db.query(`select fn_concluir_servico($1, current_date, 'troca da fonte', 'Assistência X', null, 320)`, [corr]);
+await db.query(`select fn_concluir_servico(null, current_date, 'preventiva semestral', null, null, null, null, null, null, null, null, $1, 'manutencao_preventiva')`, [bal]);
+check('tudo em dia', await sit(), 'ok');
+const { id: agMan } = await one(`select fn_agendar_servico($1, 'manutencao_preventiva', current_date + 170) as id`, [bal]);
+await expectErr('cancelar exige motivo', `select fn_cancelar_servico($1, ' ')`, [agMan], 'motivo');
+await db.query(`select fn_reagendar_servico($1, current_date + 175, 'técnico indisponível')`, [agMan]);
+await db.query(`select fn_cancelar_servico($1, 'equipamento será substituído')`, [agMan]);
+check('cancelado guarda o motivo', (await one(`select status from servicos_equipamento where id = $1`, [agMan])).status, 'cancelado');
+await expectErr('serviço não é apagado', `delete from servicos_equipamento`, [], 'imutáveis');
+console.log(process.exitCode ? '\nHÁ FALHAS' : '\nEquipamentos verificados.');
+
+// Demonstração de equipamentos
+await db.query(`select fn_demo_equipamentos($1)`, [labDemo]);
+const sits = (await db.query(`select codigo, situacao from v_equipamentos_situacao where lab_id = $1 order by codigo`, [labDemo])).rows;
+check('situações da demonstração', sits.map((r) => `${r.codigo}:${r.situacao}`),
+  ['PAT-0101:ok', 'PAT-0230:manutencao_atrasada', 'PAT-0315:em_manutencao', 'PIP-020:calibracao_a_vencer', 'TER-004:calibracao_vencida']);
+console.log(process.exitCode ? '\nHÁ FALHAS' : '\nDemonstração de equipamentos verificada.');
